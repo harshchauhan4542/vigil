@@ -417,4 +417,4 @@ Cut from the bottom, never from the safety core:
    ! cd "C:\Users\harsh\Downloads\Claude\PayPal AI Hackathon\vigil" && gh repo create vigil --public --source . --push --description "AI money-ops control room for PayPal merchants"
    ```
    GitHub will detect the MIT licence from the `LICENSE` file and show it in the repo's About section.
-2. **Say "start step 0"** when you're ready.
+2. **Say "start step 0"** when you're ready. (For new sessions, see `../SESSION_PROMPT.md`.)
