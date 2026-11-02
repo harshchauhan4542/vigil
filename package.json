@@ -16,7 +16,9 @@
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "db:migrate": "pnpm --filter @vigil/scripts db:migrate",
     "audit:verify": "pnpm --filter @vigil/scripts audit:verify",
-    "paypal:smoke": "pnpm --filter @vigil/scripts paypal:smoke"
+    "paypal:smoke": "pnpm --filter @vigil/scripts paypal:smoke",
+    "seed": "pnpm --filter @vigil/scripts seed",
+    "seed:check": "pnpm --filter @vigil/scripts seed:check"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
