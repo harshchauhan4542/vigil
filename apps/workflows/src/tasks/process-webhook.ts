@@ -8,11 +8,12 @@ import {
   transitionProposal,
   transitionWebhookEvent,
   upsertAuthorization,
+  upsertSubscription,
   type Actor,
 } from '@vigil/db';
 import { PayPalError, reads } from '@vigil/paypal';
 import type { WorkflowContext } from '../context.js';
-import { authorizationRow } from '../sync/mappers.js';
+import { authorizationRow, subscriptionRow } from '../sync/mappers.js';
 
 const ACTOR: Actor = { type: 'paypal', id: 'webhook' };
 
@@ -32,8 +33,11 @@ async function currentStatus(
       await upsertAuthorization(ctx.db, authorizationRow(a)); // keeps the mirror (and E3) current
       return a.status;
     }
-    if (eventType.startsWith('BILLING.SUBSCRIPTION.'))
-      return (await reads.getSubscription(ctx.http, resourceId)).status;
+    if (eventType.startsWith('BILLING.SUBSCRIPTION.')) {
+      const sub = await reads.getSubscription(ctx.http, resourceId);
+      await upsertSubscription(ctx.db, subscriptionRow(sub)); // E1 picks up failures on the next sweep
+      return sub.status;
+    }
   } catch (error) {
     if (error instanceof PayPalError) return null;
     throw error;
