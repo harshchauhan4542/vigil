@@ -34,6 +34,17 @@ const forbidden = [
     "import '@anthropic-ai/sdk';",
   ],
   ['db imports paypal actions', 'packages/db/src/x.ts', "import '@vigil/paypal/actions';"],
+  [
+    'agent loop imports the toolkit',
+    'packages/agent/src/loop.ts',
+    "import '@paypal/agent-toolkit/openai';",
+  ],
+  ['web imports the toolkit', 'apps/web/lib/x.ts', "import '@paypal/agent-toolkit';"],
+  [
+    'workflows import the toolkit',
+    'apps/workflows/src/x.ts',
+    "import '@paypal/agent-toolkit/openai';",
+  ],
   ['scripts import paypal actions', 'scripts/src/seed.ts', "import '@vigil/paypal/actions';"],
   [
     'agent imports sandbox setup',
@@ -53,6 +64,11 @@ const allowed = [
   ['policy imports core', 'packages/policy/src/x.ts', "import '@vigil/core';"],
   ['detectors import core', 'packages/detectors/src/x.ts', "import '@vigil/core';"],
   ['paypal imports its own actions', 'packages/paypal/src/x.ts', "import './actions.js';"],
+  [
+    'toolkit adapter imports the toolkit',
+    'packages/agent/src/toolkit-adapter.ts',
+    "import '@paypal/agent-toolkit/openai';",
+  ],
   ['scripts import sandbox setup', 'scripts/src/seed.ts', "import '@vigil/paypal/sandbox-setup';"],
   [
     'workflows reseed imports sandbox setup',

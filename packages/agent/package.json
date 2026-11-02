@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./toolkit": "./src/toolkit-adapter.ts",
+    "./testing": "./src/testing.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -13,9 +15,19 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@vigil/tsconfig": "workspace:*",
     "@types/node": "22.20.5",
+    "@vigil/tsconfig": "workspace:*",
+    "msw": "3.0.3",
     "typescript": "5.9.3",
     "vitest": "5.0.5"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "1.3.0",
+    "@paypal/agent-toolkit": "1.11.0",
+    "@vigil/core": "workspace:*",
+    "@vigil/db": "workspace:*",
+    "@vigil/paypal": "workspace:*",
+    "@vigil/replay": "workspace:*",
+    "zod": "4.6.7"
   }
 }
