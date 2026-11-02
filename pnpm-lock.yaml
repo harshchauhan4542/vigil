@@ -71,6 +71,18 @@ importers:
       '@vigil/workflows':
         specifier: workspace:*
         version: link:../workflows
+      ag-grid-community:
+        specifier: 36.2.0
+        version: 36.2.0
+      ag-grid-react:
+        specifier: 36.2.0
+        version: 36.2.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      ag-studio:
+        specifier: 3.0.0
+        version: 3.0.0
+      ag-studio-react:
+        specifier: 3.0.0
+        version: 3.0.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       ioredis:
         specifier: 6.0.0
         version: 6.0.0
@@ -1767,6 +1779,45 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
+  ag-charts-community@14.2.0:
+    resolution: {integrity: sha512-AQ9u5jJGjCGWY19XMehZFhC5db6e9J5DGCurSGjm1h9MUkfTQfj9KMDHLhTQqdNhVvTXI7J4OB8ZNbWMh3TJug==}
+
+  ag-charts-core@14.2.0:
+    resolution: {integrity: sha512-te4u0sFYMNuzfZMU/uh3nVEctIFpsAfLFBJIJtlMqBKI8otYdB3y4M5Ax8KAAg888X6G1lDaBW8FoNGzX3caSg==}
+
+  ag-charts-enterprise@14.2.0:
+    resolution: {integrity: sha512-Qw/TICVK1lGfiz5L4QPgzTD2bffWfRWMydvnlH/fbWUUz7E9noE/bERD+E65nRKmzH+++i7hSvQDGEob13SRPA==}
+
+  ag-charts-locale@14.2.0:
+    resolution: {integrity: sha512-zoG9yxh193FKc7jvx9FFp8oWUTcYIzHJLNmq1+54KCIe0us9Ay5odkp31y7WJX5gDtty8hKq+uyOEBPXtE9GHw==}
+
+  ag-charts-types@14.2.0:
+    resolution: {integrity: sha512-4pDV6/4zbzPN7t607Gr1o6DO9RhmPafQGr+hIpTJBaerbaMoC+WOO3v/wkxFbvCNrHKOexEKSfNTH7PaAR4UzA==}
+
+  ag-grid-community@36.2.0:
+    resolution: {integrity: sha512-tK0Toj7t0fV/OMLPnDc0xlYKAqDbnCT3iJodYSn2TJ541caU8jPdYwWhMdW+AP2+pUNwFiJVgc04eJNfvBPsWw==}
+
+  ag-grid-enterprise@36.2.0:
+    resolution: {integrity: sha512-xwc8yVqjSaJPb0sPzFeLoidtF+cGBMyqXQHmkRzuBj1o44cibCoTP3ICshhc5upfc+ewhSYknBC8KPxcB+d0Ag==}
+
+  ag-grid-react@36.2.0:
+    resolution: {integrity: sha512-7dsaR4Ga8/bJAOov7XJqxsDc1JAjUU5Bmh9+s4U9+/TKIdSsaVo53SuZb2yEFSB1elv3eh6aZP8a1fqGZehXwA==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  ag-stack@36.2.0:
+    resolution: {integrity: sha512-f3XT2htFs9dUPcHni2z9ak69QNta5ODEpooHuuNvbjN98JkokpEqRQ9YLQHQJFdCcgi9Ybs/j3zkkvmNRamIPg==}
+
+  ag-studio-react@3.0.0:
+    resolution: {integrity: sha512-c7TfV+tDp3bJVsJk53X3AW5DIQmFG2pNuXTPSCmfuNGgPQjv5JOgTHm+SuE32uLq9MXgIUONhCGh01PJyMIKwQ==}
+    peerDependencies:
+      react: ^17.0.0 || ^18.0.0 || ^19.0.0
+      react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  ag-studio@3.0.0:
+    resolution: {integrity: sha512-/kXv0vsy3TIY0mjdQzLEVvfbQmf8hlrTW+9ju7tET5bGNE8qCA4t5ay9TYUciMixkypsqAochTx1Ip5wy8Q7Nw==}
+
   agent-base@6.0.2:
     resolution: {integrity: sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==}
     engines: {node: '>= 6.0.0'}
@@ -2598,6 +2649,9 @@ packages:
   js-tiktoken@1.0.21:
     resolution: {integrity: sha512-biOj/6M5qdgx5TKjDnFT1ymSpM5tbd3ylwDtrQvFQSu0Z7bBYko2dF+W/aUkXUPuk6IVpRxk/3Q2sHOzGlS36g==}
 
+  js-tokens@4.0.0:
+    resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
+
   js-yaml@4.3.2:
     resolution: {integrity: sha512-SFNOvSJ+Dgf/9An904Yx+CgSlIPCkIpao4qo51lpee25TIRejdH3rhR4EZMGoNx3/TP3O+wzWuiTFl4sqbltzA==}
     hasBin: true
@@ -2740,6 +2794,10 @@ packages:
 
   lodash@4.18.1:
     resolution: {integrity: sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q==}
+
+  loose-envify@1.4.0:
+    resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
+    hasBin: true
 
   magic-string@1.4.5:
     resolution: {integrity: sha512-oLLC2+YvQUfAa+vxoufE/yc1icb87M9iXIRqAoR/2EhE/8cb3SF/+Gi0c2By1B+5Vz2e2vQtUvHiu1+63Znh+w==}
@@ -3090,6 +3148,9 @@ packages:
   process-warning@5.1.1:
     resolution: {integrity: sha512-oCkNVj4OKnKEcocVBcDfiIugN1/cE6rgfT3nCtzeqZPA8+rIxMaQ0xXzIkGP8Gj2qUaP1UR7uhJ1VD8lUCpzCg==}
 
+  prop-types@15.8.1:
+    resolution: {integrity: sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg==}
+
   proxy-addr@2.0.8:
     resolution: {integrity: sha512-5nnx0yGyVUcY6t9RnWcARWtwT9F1D8O9rt08htPvnd49W1IgZtmLkhu9WfMzQj1cFxjHIO6connUNVW5k7AVyQ==}
     engines: {node: '>= 0.10'}
@@ -3121,6 +3182,9 @@ packages:
     resolution: {integrity: sha512-rVprimfGBG3DR+Tq0IQG2DT5PxKth1WIGDmj5yPmlzr4YBe7uyE+Du4oVqTDXZSHGGGXRtTJEGSSePyQCMBglQ==}
     peerDependencies:
       react: ^19.2.8
+
+  react-is@16.13.1:
+    resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
 
   react@19.2.8:
     resolution: {integrity: sha512-PWaYA1L/q9u2u7xYQi+Y3L3Yfnie7XyLeaJICV1MGD6LprsBxcAqGjYyr0eY3p+QdsA+x/Irkt4Qif8D63+Sbw==}
@@ -4224,13 +4288,13 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
 
-  '@langchain/core@0.3.6(openai@4.86.1(zod@3.25.76))':
+  '@langchain/core@0.3.6(openai@4.86.1(zod@4.6.7))':
     dependencies:
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.21
-      langsmith: 0.1.68(openai@4.86.1(zod@3.25.76))
+      langsmith: 0.1.68(openai@4.86.1(zod@4.6.7))
       mustache: 4.2.0
       p-queue: 6.6.2
       p-retry: 4.6.2
@@ -4313,7 +4377,7 @@ snapshots:
     dependencies:
       os: 0.1.2
       '@dotenvx/dotenvx': 1.75.1
-      '@langchain/core': 0.3.6(openai@4.86.1(zod@3.25.76))
+      '@langchain/core': 0.3.6(openai@4.86.1(zod@4.6.7))
       '@modelcontextprotocol/sdk': 1.32.2(zod@3.25.76)
       '@paypal/paypal-server-sdk': 1.1.0(debug@4.4.3)
       ai: 4.3.19(react@19.3.1)(zod@3.25.76)
@@ -4629,6 +4693,63 @@ snapshots:
       acorn: 8.19.0
 
   acorn@8.19.0: {}
+
+  ag-charts-community@14.2.0:
+    dependencies:
+      ag-charts-core: 14.2.0
+      ag-charts-locale: 14.2.0
+      ag-charts-types: 14.2.0
+
+  ag-charts-core@14.2.0:
+    dependencies:
+      ag-charts-types: 14.2.0
+
+  ag-charts-enterprise@14.2.0:
+    dependencies:
+      ag-charts-community: 14.2.0
+      ag-charts-core: 14.2.0
+
+  ag-charts-locale@14.2.0: {}
+
+  ag-charts-types@14.2.0: {}
+
+  ag-grid-community@36.2.0:
+    dependencies:
+      ag-charts-types: 14.2.0
+      ag-stack: 36.2.0
+
+  ag-grid-enterprise@36.2.0:
+    dependencies:
+      ag-grid-community: 36.2.0
+      ag-stack: 36.2.0
+    optionalDependencies:
+      ag-charts-community: 14.2.0
+      ag-charts-enterprise: 14.2.0
+
+  ag-grid-react@36.2.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+    dependencies:
+      ag-grid-community: 36.2.0
+      prop-types: 15.8.1
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
+
+  ag-stack@36.2.0: {}
+
+  ag-studio-react@3.0.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+    dependencies:
+      ag-grid-enterprise: 36.2.0
+      ag-grid-react: 36.2.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      ag-stack: 36.2.0
+      ag-studio: 3.0.0
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
+
+  ag-studio@3.0.0:
+    dependencies:
+      ag-charts-enterprise: 14.2.0
+      ag-grid-enterprise: 36.2.0
+      ag-stack: 36.2.0
+      tslib: 2.9.1
 
   agent-base@6.0.2:
     dependencies:
@@ -5409,6 +5530,8 @@ snapshots:
     dependencies:
       base64-js: 1.5.1
 
+  js-tokens@4.0.0: {}
+
   js-yaml@4.3.2:
     dependencies:
       argparse: 2.0.1
@@ -5442,7 +5565,7 @@ snapshots:
     dependencies:
       json-buffer: 3.0.1
 
-  langsmith@0.1.68(openai@4.86.1(zod@3.25.76)):
+  langsmith@0.1.68(openai@4.86.1(zod@4.6.7)):
     dependencies:
       '@types/uuid': 10.0.0
       commander: 10.0.1
@@ -5523,6 +5646,10 @@ snapshots:
   lodash.merge@4.6.2: {}
 
   lodash@4.18.1: {}
+
+  loose-envify@1.4.0:
+    dependencies:
+      js-tokens: 4.0.0
 
   magic-string@1.4.5:
     dependencies:
@@ -5845,6 +5972,12 @@ snapshots:
 
   process-warning@5.1.1: {}
 
+  prop-types@15.8.1:
+    dependencies:
+      loose-envify: 1.4.0
+      object-assign: 4.1.1
+      react-is: 16.13.1
+
   proxy-addr@2.0.8:
     dependencies:
       forwarded: 0.2.0
@@ -5874,6 +6007,8 @@ snapshots:
     dependencies:
       react: 19.2.8
       scheduler: 0.27.0
+
+  react-is@16.13.1: {}
 
   react@19.2.8: {}
 
