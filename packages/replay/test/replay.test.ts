@@ -314,3 +314,31 @@ describe('llm replay with different row ids', () => {
     expect(await res.text()).toContain(B);
   });
 });
+
+describe('step 19 key rules', () => {
+  it('ignores time-window params and separates mocked calls', () => {
+    const a = paypalKey(
+      'GET',
+      new URL(
+        `${BASE}/v1/reporting/transactions?start_date=2026-01-01&end_date=2026-01-02&fields=all`,
+      ),
+      '',
+    );
+    const b = paypalKey(
+      'GET',
+      new URL(
+        `${BASE}/v1/reporting/transactions?fields=all&start_date=2027-05-05&end_date=2027-05-06`,
+      ),
+      '',
+    );
+    expect(a).toBe(b);
+    const real = paypalKey('POST', new URL(`${BASE}/v2/payments/authorizations/A/capture`), '{}');
+    const mocked = paypalKey(
+      'POST',
+      new URL(`${BASE}/v2/payments/authorizations/A/capture`),
+      '{}',
+      '{"mock_application_codes":"AUTHORIZATION_EXPIRED"}',
+    );
+    expect(real).not.toBe(mocked);
+  });
+});

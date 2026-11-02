@@ -75,3 +75,4 @@ Legend: ☐ not started · 🟡 in progress · ✅ done · ❌ blocked
 | 2026-11-02 | 16       | 🟡 E1 + E2 detectors, sync, agent tools, e2e tests                                                    | [2026-11-02-step-16-e1-e2.md](2026-11-02-step-16-e1-e2.md)                 |
 | 2026-11-02 | 17       | 🟡 W1, W2, W4, /audit, /judge, simulate-failure toggle                                                | [2026-11-02-step-17-widgets.md](2026-11-02-step-17-widgets.md)             |
 | 2026-11-02 | 18       | 🟡 Claude adapter for Studio agents, Vigil Ops agent, delegation harness                              | [2026-11-02-step-18-studio-agent.md](2026-11-02-step-18-studio-agent.md)   |
+| 2026-11-02 | 19       | ✅ Zero-key Replay world, Playwright e2e in CI, pnpm demo, security scan, Postman                     | [2026-11-02-step-19-hardening.md](2026-11-02-step-19-hardening.md)         |
