@@ -493,6 +493,7 @@ export async function getWebhookEvent(db: Executor, eventId: string) {
 }
 
 export interface WebhookTransitionExtras {
+  simulated?: boolean;
   verificationMethod?: string;
   verificationStatus?: string;
   error?: string | null;
@@ -631,4 +632,16 @@ export async function advanceException(
     if (error instanceof StaleStateError) return false;
     throw error;
   }
+}
+
+/** Proposals whose successful execution created/affected this PayPal resource id. */
+export async function findProposalsByResource(db: Executor, resourceId: string) {
+  return db
+    .selectDistinct({ proposal: proposals })
+    .from(proposals)
+    .innerJoin(executions, eq(executions.proposalId, proposals.id))
+    .where(
+      sql`(${executions.response}->>'id' = ${resourceId} or ${proposals.targetRef} like ${'%:' + resourceId})`,
+    )
+    .then((rows) => rows.map((r) => r.proposal));
 }

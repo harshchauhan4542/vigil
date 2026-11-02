@@ -20,6 +20,8 @@ export interface PayPalRequest {
   /** Raw PayPal-Mock-Response header value (only set via mock-response.ts). */
   mockResponseHeader?: string;
   headers?: Record<string, string>;
+  /** Send this exact string as the JSON body instead of JSON.stringify(body). */
+  rawJsonBody?: string;
   /** Extra attempts after a retryable failure (429/5xx/network). Default 0. */
   retries?: number;
 }
@@ -133,7 +135,9 @@ export class PayPalHttp {
     const headers: Record<string, string> = {
       Authorization: `Bearer ${token.accessToken}`,
       Accept: 'application/json',
-      ...(req.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      ...(req.body !== undefined || req.rawJsonBody !== undefined
+        ? { 'Content-Type': 'application/json' }
+        : {}),
       ...(req.method !== 'GET' ? { Prefer: 'return=representation' } : {}),
       ...(req.requestId ? { 'PayPal-Request-Id': req.requestId } : {}),
       ...(req.mockResponseHeader ? { 'PayPal-Mock-Response': req.mockResponseHeader } : {}),
@@ -154,7 +158,11 @@ export class PayPalHttp {
       return await this.fetchImpl(url, {
         method: req.method,
         headers,
-        ...(req.body !== undefined ? { body: JSON.stringify(req.body) } : {}),
+        ...(req.rawJsonBody !== undefined
+          ? { body: req.rawJsonBody }
+          : req.body !== undefined
+            ? { body: JSON.stringify(req.body) }
+            : {}),
       });
     } catch (cause) {
       if (cause instanceof PayPalError) throw cause;
