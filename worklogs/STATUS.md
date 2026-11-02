@@ -70,3 +70,4 @@ Legend: ☐ not started · 🟡 in progress · ✅ done · ❌ blocked
 | 2026-11-02 | 11       | 🟡 Webhook verify (postback + self + simulator rule), receiver, process_webhook; real webhook pending | [2026-11-02-step-11-webhooks.md](2026-11-02-step-11-webhooks.md)           |
 | 2026-11-02 | 12       | ✅ Next.js API routes, gate behind approve, SSE, sessions, rate limits                                | [2026-11-02-step-12-web-api.md](2026-11-02-step-12-web-api.md)             |
 | 2026-11-02 | 13       | 🟡 Control room: AG Grid queue, Proposal Card, SSE, Studio analytics; spike S3 = Plan A               | [2026-11-02-step-13-control-room.md](2026-11-02-step-13-control-room.md)   |
+| 2026-11-02 | 14       | 🟡 render.yaml, bundled worker/cron, auto-fallback to Replay, deploy guide; deploy pending account    | [2026-11-02-step-14-render.md](2026-11-02-step-14-render.md)               |

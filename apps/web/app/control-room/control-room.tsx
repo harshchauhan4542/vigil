@@ -39,9 +39,11 @@ const CODES: Record<string, string> = {
 
 export function ControlRoom({
   mode,
+  fallbackReason,
   studioLicense,
 }: {
   mode: 'live' | 'replay';
+  fallbackReason: string | null;
   studioLicense: string;
 }) {
   const [rows, setRows] = useState<QueueRow[]>([]);
@@ -137,6 +139,9 @@ export function ControlRoom({
         </button>
       </header>
       <div className={`banner ${mode}`}>
+        {fallbackReason
+          ? `Live is unavailable (${fallbackReason}), so you are seeing Replay. `
+          : ''}
         {mode === 'replay'
           ? 'REPLAY MODE: recorded PayPal sandbox and Claude responses. No keys, no network, deterministic.'
           : 'LIVE MODE: real PayPal sandbox calls and real Claude. Every money action needs policy + your approval.'}
