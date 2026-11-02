@@ -1,0 +1,103 @@
+import {
+  getException,
+  insertLedgerEntries,
+  listExceptions,
+  listLedgerEntries,
+  transitionException,
+  upsertSeedObject,
+} from '@vigil/db';
+import { describe, expect, it } from 'vitest';
+import { detectExceptions } from '../src/sync/detect.js';
+import { useTestEnv } from './helpers.js';
+
+const env = useTestEnv();
+const NOW = new Date('2026-11-05T12:00:00Z');
+const hoursAgo = (h: number) => new Date(NOW.getTime() - h * 3_600_000).toISOString();
+
+async function seedWorld() {
+  const { fake, handle } = env;
+  fake.addAuthorization('AUTH-OLD', 4800, hoursAgo(61)); // honor ends in 11h → E3
+  fake.addAuthorization('AUTH-NEW', 12900, hoursAgo(5)); // fine
+  for (const id of ['AUTH-OLD', 'AUTH-NEW']) {
+    await upsertSeedObject(handle.db, {
+      seedKey: `auth:${id}`,
+      kind: 'order_authorize',
+      paypalId: `ORDER-${id}`,
+      status: 'CREATED',
+      data: { authorization_id: id },
+    });
+  }
+  // One clean sale, one sale with a wrong booking.
+  fake.addTransaction('TX-OK', 6500, '2026-11-02T10:00:00Z', { invoice_id: 'INV-1' });
+  fake.addTransaction('TX-BAD', 3200, '2026-11-02T11:00:00Z', { invoice_id: 'INV-2' });
+  await insertLedgerEntries(handle.db, [
+    {
+      id: '00000000-0000-4000-8000-000000000001',
+      source: 'books',
+      externalRef: 'INV-1',
+      amountCents: 6500,
+      currency: 'USD',
+      bookedOn: '2026-11-02',
+      memo: 'Sale INV-1',
+    },
+    {
+      id: '00000000-0000-4000-8000-000000000002',
+      source: 'books',
+      externalRef: 'INV-2',
+      amountCents: 2900,
+      currency: 'USD',
+      bookedOn: '2026-11-02',
+      memo: 'Sale INV-2',
+    },
+  ]);
+}
+
+describe('detectExceptions', () => {
+  it('syncs mirrors, detects E3 + E4 and marks matched ledger rows', async () => {
+    await seedWorld();
+    const s = await detectExceptions({ db: env.handle.db, http: env.http, now: NOW });
+    expect(s).toMatchObject({ authorizationsSynced: 2, transactionsSynced: 2, detected: 2 });
+    const list = await listExceptions(env.handle.db);
+    expect(list.map((e) => [e.type, e.targetRef]).sort()).toEqual([
+      ['AUTH_HONOR_EXPIRING', 'authorization:AUTH-OLD'],
+      ['UNMATCHED_TXN', 'txn:TX-BAD'],
+    ]);
+    const e3 = list.find((e) => e.type === 'AUTH_HONOR_EXPIRING')!;
+    expect(e3).toMatchObject({
+      amountAtRiskCents: 4800,
+      status: 'OPEN',
+      severity: 3,
+      score: 14400,
+    });
+    const ledger = await listLedgerEntries(env.handle.db);
+    expect(ledger.find((l) => l.externalRef === 'INV-1')?.matchedTxnId).toBe('TX-OK');
+    expect(ledger.find((l) => l.externalRef === 'INV-2')?.matchedTxnId).toBeNull();
+  });
+
+  it('is idempotent and re-opens a dismissed exception that fires again', async () => {
+    await seedWorld();
+    const first = await detectExceptions({ db: env.handle.db, http: env.http, now: NOW });
+    const second = await detectExceptions({ db: env.handle.db, http: env.http, now: NOW });
+    expect(second.created).toEqual([]);
+    expect(await listExceptions(env.handle.db)).toHaveLength(2);
+
+    const id = first.created[0]!;
+    await transitionException(env.handle.db, id, 'OPEN', 'DISMISSED', { type: 'human', id: 'u' });
+    const third = await detectExceptions({ db: env.handle.db, http: env.http, now: NOW });
+    expect(third.reopened).toEqual([id]);
+    expect((await getException(env.handle.db, id))?.status).toBe('OPEN');
+  });
+
+  it('ignores stale authorization ids (404) without failing the sweep', async () => {
+    await seedWorld();
+    await upsertSeedObject(env.handle.db, {
+      seedKey: 'auth:gone',
+      kind: 'order_authorize',
+      paypalId: 'ORDER-GONE',
+      status: 'CREATED',
+      data: { authorization_id: 'AUTH-GONE' },
+    });
+    const s = await detectExceptions({ db: env.handle.db, http: env.http, now: NOW });
+    expect(s.authorizationsSynced).toBe(2);
+  });
+});

@@ -67,6 +67,7 @@ export interface UpsertExceptionInput {
   amountAtRiskCents?: number | null;
   currency?: string | null;
   severity?: number;
+  score?: number;
   deadlineAt?: Date | null;
   detectorVersion: string;
   evidence: Record<string, unknown>;
@@ -88,6 +89,7 @@ export async function upsertException(db: Executor, input: UpsertExceptionInput,
       amountAtRiskCents: input.amountAtRiskCents ?? null,
       currency: input.currency ?? null,
       severity: input.severity ?? 1,
+      score: input.score ?? 0,
       deadlineAt: input.deadlineAt ?? null,
       detectorVersion: input.detectorVersion,
       evidence: input.evidence,
@@ -145,8 +147,8 @@ export async function getException(db: Executor, id: string) {
 export async function listExceptions(db: Executor, statuses?: readonly ExceptionStatus[]) {
   const q = db.select().from(exceptions);
   return (statuses?.length ? q.where(inArray(exceptions.status, [...statuses])) : q).orderBy(
+    desc(exceptions.score),
     asc(exceptions.deadlineAt),
-    desc(exceptions.severity),
   );
 }
 
