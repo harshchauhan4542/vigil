@@ -64,6 +64,12 @@ export const vigilSchema = z.object({
     z.enum(['live', 'replay']).default('replay'),
   ),
   EXECUTION_ENABLED: bool(true),
+  /** In live mode, record every PayPal and Claude response for replay. */
+  RECORD: bool(false),
+  FIXTURES_DIR: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.string().default('fixtures/recordings'),
+  ),
   POLICY_PER_ACTION_CAP_USD: positiveInt(500),
   POLICY_DAILY_CAP_USD: positiveInt(2000),
 });

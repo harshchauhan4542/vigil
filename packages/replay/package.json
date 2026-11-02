@@ -13,9 +13,13 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@vigil/tsconfig": "workspace:*",
     "@types/node": "22.20.5",
+    "@vigil/tsconfig": "workspace:*",
+    "msw": "3.0.3",
     "typescript": "5.9.3",
     "vitest": "5.0.5"
+  },
+  "dependencies": {
+    "@vigil/core": "workspace:*"
   }
 }
