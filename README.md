@@ -13,6 +13,7 @@ Vigil watches a merchant's PayPal account for money exceptions, such as authoriz
 
 - **Judge guide:** [below](#judge-guide)
 - **Architecture:** [below](#architecture) · [docs/architecture.md](docs/architecture.md)
+- **What you need to provide (accounts, keys, .env):** [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md)
 - **Negative testing (what is mocked and what is real):** [docs/negative-testing.md](docs/negative-testing.md)
 
 ## Why
