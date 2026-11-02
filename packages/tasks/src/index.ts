@@ -9,6 +9,7 @@ export const TASK_NAMES = [
   'triage_exception',
   'execute_proposal',
   'settle_check',
+  'process_webhook',
   'reconcile_window',
   'reseed_demo',
 ] as const;
