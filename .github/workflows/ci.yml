@@ -48,6 +48,14 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: DB migrations match the schema
+        run: |
+          pnpm --filter @vigil/db exec drizzle-kit generate --name ci_drift_check
+          if [ -n "$(git status --porcelain packages/db/migrations)" ]; then
+            echo "::error::packages/db/src/schema.ts changed without a migration. Run: pnpm --filter @vigil/db db:generate"
+            git status --porcelain packages/db/migrations; exit 1
+          fi
+
       - name: No secrets committed
         run: |
           if git ls-files | grep -E '(^|/)\.env$|(^|/)\.env\.(?!example)' -P; then
