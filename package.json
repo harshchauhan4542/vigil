@@ -18,7 +18,8 @@
     "audit:verify": "pnpm --filter @vigil/scripts audit:verify",
     "paypal:smoke": "pnpm --filter @vigil/scripts paypal:smoke",
     "seed": "pnpm --filter @vigil/scripts seed",
-    "seed:check": "pnpm --filter @vigil/scripts seed:check"
+    "seed:check": "pnpm --filter @vigil/scripts seed:check",
+    "flow": "pnpm --filter @vigil/workflows flow"
   },
   "devDependencies": {
     "@types/node": "22.20.5",

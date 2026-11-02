@@ -123,3 +123,25 @@ export async function knownCaptureIds(db: Executor): Promise<string[]> {
     .where(sql`${seedObjects.data} ? 'capture_id'`);
   return [...new Set([...mirrored, ...seeded].map((r) => r.id).filter(Boolean))].sort();
 }
+
+export async function updateAuthorizationMirror(
+  db: Executor,
+  id: string,
+  fields: Partial<Pick<AuthorizationMirror, 'status' | 'capturedTotalCents'>>,
+) {
+  await db
+    .update(ppAuthorizations)
+    .set({ ...fields, syncedAt: now })
+    .where(eq(ppAuthorizations.id, id));
+}
+
+export async function updateCaptureMirror(
+  db: Executor,
+  id: string,
+  fields: Partial<Pick<CaptureMirror, 'status' | 'refundedTotalCents' | 'hasTracker'>>,
+) {
+  await db
+    .update(ppCaptures)
+    .set({ ...fields, syncedAt: now })
+    .where(eq(ppCaptures.id, id));
+}

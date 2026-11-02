@@ -45,6 +45,9 @@ const forbidden = [
     'apps/workflows/src/x.ts',
     "import '@paypal/agent-toolkit/openai';",
   ],
+  ['gate imports the LLM SDK', 'packages/gate/src/x.ts', "import '@anthropic-ai/sdk';"],
+  ['gate imports the agent', 'packages/gate/src/x.ts', "import '@vigil/agent';"],
+  ['gate imports paypal actions', 'packages/gate/src/x.ts', "import '@vigil/paypal/actions';"],
   ['scripts import paypal actions', 'scripts/src/seed.ts', "import '@vigil/paypal/actions';"],
   [
     'agent imports sandbox setup',
