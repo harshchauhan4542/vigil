@@ -73,6 +73,8 @@ async function pendingCapture() {
     {
       type: 'AUTH_HONOR_EXPIRING',
       targetRef: 'authorization:AUTH1',
+      amountAtRiskCents: 4800,
+      currency: 'USD',
       detectorVersion: 'e3.v1',
       evidence: { authorization_id: 'AUTH1' },
     },
@@ -193,5 +195,44 @@ describe('read routes', () => {
     const ok = await setMode(post('/api/demo/mode', { mode: 'replay' }));
     expect(ok.headers.get('set-cookie')).toContain('vigil_mode=replay');
     expect((await setMode(post('/api/demo/mode', { mode: 'prod' }))).status).toBe(400);
+  });
+});
+
+describe('step 17 routes', () => {
+  it('stats, trail, and the simulate-failure toggle (Payments v2 only)', async () => {
+    const { GET: stats } = await import('../app/api/stats/route');
+    const { GET: trail } = await import('../app/api/exceptions/[id]/trail/route');
+    const p = await pendingCapture();
+    const s = await (await stats(new Request('http://localhost/api/stats'))).json();
+    expect(s.atRisk).toEqual([{ currency: 'USD', cents: 4800, count: 1 }]);
+
+    fake.fail('authorizations.capture', 422, 1, { issue: 'AUTHORIZATION_EXPIRED' });
+    const res = await approve(
+      post(`/api/proposals/${p.id}/approve`, { mock_code: 'AUTHORIZATION_EXPIRED' }),
+      ctx(p.id),
+    );
+    expect(res.status).toBe(202);
+    const [exec] = await listExecutions(handle.db, p.id);
+    expect(exec).toMatchObject({ mockCode: 'AUTHORIZATION_EXPIRED', httpStatus: 422 });
+
+    const t = await (await trail(new Request('http://localhost/x'), ctx(p.exceptionId))).json();
+    const actions = t.trail.map((r: { action: string }) => r.action);
+    expect(actions).toEqual(
+      expect.arrayContaining(['exception.detected', 'proposal.drafted', 'approval.approved']),
+    );
+  });
+
+  it('refuses a mock code on an action PayPal cannot mock', async () => {
+    const p = await pendingCapture();
+    await handle.db.execute(
+      (await import('drizzle-orm'))
+        .sql`update proposals set action_type = 'suspend_subscription' where id = ${p.id}`,
+    );
+    const res = await approve(
+      post(`/api/proposals/${p.id}/approve`, { mock_code: 'INTERNAL_SERVER_ERROR' }),
+      ctx(p.id),
+    );
+    expect(res.status).toBe(422);
+    expect((await res.json()).error).toBe('mock_not_supported');
   });
 });

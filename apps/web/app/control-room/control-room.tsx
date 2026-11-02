@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ProposalCard } from './proposal-card';
 import type { QueueRow } from './types';
+import { DeadlineRadar, MoneyAtRisk, SettlementTrail } from './widgets';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -134,6 +135,8 @@ export function ControlRoom({
         <span className="muted">Money-ops control room</span>
         <span style={{ flex: 1 }} />
         <span className="muted mono">{lastEvent}</span>
+        <a href="/audit">Audit log</a>
+        <a href="/judge">Judge panel</a>
         <button onClick={() => switchMode(mode === 'live' ? 'replay' : 'live')}>
           Switch to {mode === 'live' ? 'Replay' : 'Live'}
         </button>
@@ -147,6 +150,9 @@ export function ControlRoom({
           : 'LIVE MODE: real PayPal sandbox calls and real Claude. Every money action needs policy + your approval.'}
       </div>
       <main className="layout">
+        <section className="panel" style={{ gridColumn: '1 / -1' }}>
+          <MoneyAtRisk version={version} />
+        </section>
         <section className="panel">
           <h2>Exception queue</h2>
           <div style={{ height: 420 }}>
@@ -173,6 +179,18 @@ export function ControlRoom({
             <p className="muted">
               {current ? 'No proposal yet for this exception.' : 'Select an exception.'}
             </p>
+          )}
+        </section>
+        <section className="panel">
+          <h2>Deadline radar</h2>
+          <DeadlineRadar rows={rows} now={now} />
+        </section>
+        <section className="panel">
+          <h2>Settlement trail</h2>
+          {current ? (
+            <SettlementTrail exceptionId={current.id} version={version} />
+          ) : (
+            <p className="muted">Select an exception to see its trail.</p>
           )}
         </section>
         <section className="panel" style={{ gridColumn: '1 / -1' }}>
