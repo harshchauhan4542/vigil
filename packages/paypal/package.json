@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./reads": "./src/reads.ts",
+    "./actions": "./src/actions.ts",
+    "./sandbox-setup": "./src/sandbox-setup.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

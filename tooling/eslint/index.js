@@ -12,6 +12,17 @@ const PAYPAL_ACTIONS = {
     'Trust boundary: only apps/workflows may import the money-moving PayPal actions (packages/paypal/src/actions.ts).',
 };
 
+/** Creates demo data in the sandbox. Seeder scripts and the workflows reseed task only. */
+const SANDBOX_SETUP = {
+  group: [
+    '@vigil/paypal/sandbox-setup',
+    '@vigil/paypal/src/sandbox-setup*',
+    '**/paypal/src/sandbox-setup*',
+  ],
+  message:
+    'Trust boundary: sandbox data creation is only for scripts/ and the apps/workflows reseed task.',
+};
+
 const LLM_SDK = {
   group: ['@anthropic-ai/sdk', '@anthropic-ai/sdk/*', '@vigil/agent', '@vigil/agent/*'],
   message: 'Trust boundary: this module must never import the LLM SDK or the agent.',
@@ -66,25 +77,41 @@ const restrict = (...patterns) => ['error', { patterns }];
 
 /** Trust-boundary rule set, one entry per file scope. Later entries override earlier ones. */
 export const boundaryRules = [
-  // Default for every file: nobody imports the money-moving actions.
+  // Default for every file: nobody imports the money-moving actions or sandbox setup.
   {
     files: ['**/*.{ts,tsx,js,mjs,cjs}'],
-    rules: { 'no-restricted-imports': restrict(PAYPAL_ACTIONS) },
+    rules: { 'no-restricted-imports': restrict(PAYPAL_ACTIONS, SANDBOX_SETUP) },
   },
   // Pure packages: core and detectors.
   {
     files: ['packages/core/**', 'packages/detectors/**'],
-    rules: { 'no-restricted-imports': restrict(PAYPAL_ACTIONS, LLM_SDK, POLICY_MINT, IO_MODULES) },
+    rules: {
+      'no-restricted-imports': restrict(
+        PAYPAL_ACTIONS,
+        SANDBOX_SETUP,
+        LLM_SDK,
+        POLICY_MINT,
+        IO_MODULES,
+      ),
+    },
   },
   // Policy: pure and deterministic. May import core only.
   {
     files: ['packages/policy/**'],
-    rules: { 'no-restricted-imports': restrict(PAYPAL_ACTIONS, LLM_SDK, IO_MODULES, PAYPAL_ANY) },
+    rules: {
+      'no-restricted-imports': restrict(
+        PAYPAL_ACTIONS,
+        SANDBOX_SETUP,
+        LLM_SDK,
+        IO_MODULES,
+        PAYPAL_ANY,
+      ),
+    },
   },
   // Agent (Tier 1): proposes only. No actions, no policy minting.
   {
     files: ['packages/agent/**'],
-    rules: { 'no-restricted-imports': restrict(PAYPAL_ACTIONS, POLICY_MINT) },
+    rules: { 'no-restricted-imports': restrict(PAYPAL_ACTIONS, SANDBOX_SETUP, POLICY_MINT) },
   },
   // PayPal package: holds credentials, never talks to the agent or LLM.
   // Inside the package, relative imports of ./actions are allowed (index.ts must not re-export it).
@@ -102,10 +129,10 @@ export const boundaryRules = [
     files: ['apps/workflows/src/tasks/execute-proposal.ts'],
     rules: { 'no-restricted-imports': restrict(LLM_SDK) },
   },
-  // Seed / ops scripts run outside the app and may create sandbox objects through actions.
+  // Seed / ops scripts may create sandbox data, but never move money for an exception fix.
   {
     files: ['scripts/**'],
-    rules: { 'no-restricted-imports': restrict(LLM_SDK) },
+    rules: { 'no-restricted-imports': restrict(PAYPAL_ACTIONS, LLM_SDK) },
   },
 ];
 
