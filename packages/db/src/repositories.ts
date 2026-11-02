@@ -19,6 +19,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { appendAudit } from './audit.js';
 import type { Executor } from './client.js';
 import {
+  agentRuns,
   approvals,
   exceptions,
   executions,
@@ -513,4 +514,42 @@ export async function transitionWebhookEvent(
     .returning();
   if (!row) throw new StaleStateError('webhook_event', eventId, from);
   return row;
+}
+
+// ------------------------------------------------------------------ agent runs
+
+export interface StartAgentRunInput {
+  exceptionId: string | null;
+  model: string;
+  mode: 'live' | 'replay';
+  promptHash: string;
+}
+
+export async function startAgentRun(db: Executor, input: StartAgentRunInput) {
+  const [row] = await db
+    .insert(agentRuns)
+    .values({ id: uuidv7(), ...input })
+    .returning();
+  return row!;
+}
+
+export interface FinishAgentRunInput {
+  inputTokens: number;
+  outputTokens: number;
+  turns: number;
+  trace: unknown;
+}
+
+export async function finishAgentRun(db: Executor, id: string, input: FinishAgentRunInput) {
+  const [row] = await db
+    .update(agentRuns)
+    .set({ ...input, finishedAt: new Date() })
+    .where(eq(agentRuns.id, id))
+    .returning();
+  return row!;
+}
+
+export async function getAgentRun(db: Executor, id: string) {
+  const [row] = await db.select().from(agentRuns).where(eq(agentRuns.id, id));
+  return row ?? null;
 }
