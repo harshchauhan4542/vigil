@@ -117,6 +117,13 @@ export const boundaryRules = [
       ),
     },
   },
+  // Gate (Tier 2): policy + approval. Never the LLM, never the money-moving actions.
+  {
+    files: ['packages/gate/**'],
+    rules: {
+      'no-restricted-imports': restrict(PAYPAL_ACTIONS, SANDBOX_SETUP, LLM_SDK, AGENT_TOOLKIT),
+    },
+  },
   // Agent (Tier 1): proposes only. No actions, no policy minting.
   {
     files: ['packages/agent/**'],

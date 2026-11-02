@@ -82,7 +82,8 @@ export const exceptionMachine = defineMachine<ExceptionStatus>('exception', {
   PROPOSED: ['AWAITING_APPROVAL', 'TRIAGING', ...EXCEPTION_SIDE_EXITS],
   AWAITING_APPROVAL: ['EXECUTING', 'TRIAGING', ...EXCEPTION_SIDE_EXITS],
   // A final PayPal error (e.g. 422 AUTHORIZATION_EXPIRED) sends it back to the agent.
-  EXECUTING: ['AWAITING_SETTLEMENT', 'TRIAGING', 'FAILED', 'ESCALATED'],
+  // DISMISSED: an approved propose_dismiss "executes" by closing the exception.
+  EXECUTING: ['AWAITING_SETTLEMENT', 'TRIAGING', 'FAILED', 'ESCALATED', 'DISMISSED'],
   AWAITING_SETTLEMENT: ['RESOLVED', 'FAILED', 'ESCALATED'],
   // Re-opens when the detector fires again after it was closed.
   RESOLVED: ['OPEN'],

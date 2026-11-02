@@ -7,14 +7,23 @@
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "flow": "node --env-file-if-exists=../../.env --import tsx src/cli.ts"
   },
   "dependencies": {
+    "@renderinc/sdk": "1.6.0",
+    "@vigil/agent": "workspace:*",
     "@vigil/config": "workspace:*",
     "@vigil/core": "workspace:*",
     "@vigil/db": "workspace:*",
     "@vigil/detectors": "workspace:*",
-    "@vigil/paypal": "workspace:*"
+    "@vigil/gate": "workspace:*",
+    "@vigil/paypal": "workspace:*",
+    "@vigil/policy": "workspace:*",
+    "@vigil/replay": "workspace:*",
+    "@vigil/scripts": "workspace:*",
+    "@vigil/tasks": "workspace:*",
+    "uuid": "14.0.3"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
@@ -22,6 +31,7 @@
     "drizzle-orm": "0.45.4",
     "msw": "3.0.3",
     "typescript": "5.9.3",
-    "vitest": "5.0.5"
+    "vitest": "5.0.5",
+    "tsx": "4.23.15"
   }
 }

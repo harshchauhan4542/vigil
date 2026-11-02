@@ -151,6 +151,15 @@ export class FakePayPal {
         });
         return HttpResponse.json({ transaction_details: rows, page: 1, total_pages: 1 });
       }),
+      http.get(`${BASE}/v1/customer/disputes`, ({ request }) => {
+        const id = new URL(request.url).searchParams.get('disputed_transaction_id');
+        const c = id ? this.captures.get(id) : undefined;
+        return HttpResponse.json({
+          items: c?.disputed
+            ? [{ dispute_id: 'PP-D-1', status: 'WAITING_FOR_SELLER_RESPONSE' }]
+            : [],
+        });
+      }),
       http.post(`${BASE}/v2/payments/authorizations/:id/capture`, async ({ request, params }) => {
         const body = (await request.json()) as Json;
         return this.mutate(request, 'authorizations.capture', () => {
