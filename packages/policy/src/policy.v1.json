@@ -1,0 +1,15 @@
+{
+  "version": "policy.v1",
+  "perActionCapCents": 50000,
+  "dailyCapCents": 200000,
+  "sessionDailyCapCents": 100000,
+  "reauthorize": {
+    "maxPercent": 115,
+    "maxIncreaseCents": 7500,
+    "honorHours": 72,
+    "validityDays": 29
+  },
+  "approvalTokenTtlMinutes": 15,
+  "proposalTtlMinutes": 120,
+  "disabledActions": []
+}
