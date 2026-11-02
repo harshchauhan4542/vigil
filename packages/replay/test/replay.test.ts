@@ -226,7 +226,7 @@ describe('scrubbing', () => {
     });
     const res = await f('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'x-api-key': 'sk-ant-should-not-be-stored' },
+      headers: { 'x-api-key': 'fake-anthropic-key-should-not-be-stored' },
       body: JSON.stringify({
         model: 'claude-sonnet-5',
         messages: [{ role: 'user', content: 'hi' }],
@@ -235,7 +235,7 @@ describe('scrubbing', () => {
     expect(await res.text()).toContain(SECRET); // the live caller still sees the real body
     const saved = JSON.stringify([...store.recordings.values()]);
     expect(saved).not.toContain(SECRET);
-    expect(saved).not.toContain('sk-ant-should-not-be-stored');
+    expect(saved).not.toContain('fake-anthropic-key-should-not-be-stored');
     expect(saved).toContain('message_start');
   });
 });
