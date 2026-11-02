@@ -50,3 +50,25 @@ export interface DetectedException {
   detectorVersion: string;
   evidence: Record<string, unknown>;
 }
+
+export interface SubscriptionRow {
+  id: string;
+  planId: string;
+  status: string;
+  outstandingBalanceCents: number;
+  currency: string;
+  lastFailedReason: string | null;
+  lastFailedAt: Date | null;
+}
+
+export interface CaptureRow {
+  id: string;
+  orderId: string | null;
+  status: string;
+  amountCents: number;
+  currency: string;
+  hasTracker: boolean;
+  createdAt: Date | null;
+  /** Physical goods need a tracker; digital/service orders don't. */
+  isPhysical: boolean;
+}

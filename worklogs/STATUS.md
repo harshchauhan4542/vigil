@@ -72,3 +72,4 @@ Legend: ☐ not started · 🟡 in progress · ✅ done · ❌ blocked
 | 2026-11-02 | 13       | 🟡 Control room: AG Grid queue, Proposal Card, SSE, Studio analytics; spike S3 = Plan A               | [2026-11-02-step-13-control-room.md](2026-11-02-step-13-control-room.md)   |
 | 2026-11-02 | 14       | 🟡 render.yaml, bundled worker/cron, auto-fallback to Replay, deploy guide; deploy pending account    | [2026-11-02-step-14-render.md](2026-11-02-step-14-render.md)               |
 | 2026-11-02 | 15       | 🟡 README + Tools Statement, negative-testing, architecture, Devpost draft                            | [2026-11-02-step-15-submission.md](2026-11-02-step-15-submission.md)       |
+| 2026-11-02 | 16       | 🟡 E1 + E2 detectors, sync, agent tools, e2e tests                                                    | [2026-11-02-step-16-e1-e2.md](2026-11-02-step-16-e1-e2.md)                 |
