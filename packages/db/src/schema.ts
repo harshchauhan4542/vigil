@@ -321,3 +321,33 @@ export const recordings = pgTable(
   },
   (t) => [check('recordings_kind_ck', sql`${t.kind} in ('llm', 'paypal')`)],
 );
+
+// ---------------------------------------------------------------- Demo seeding
+
+/** What the sandbox seeder created, keyed by a stable seed key, so re-runs never duplicate. */
+export const seedObjects = pgTable(
+  'seed_objects',
+  {
+    seedKey: text('seed_key').primaryKey(),
+    kind: text('kind').notNull(),
+    paypalId: text('paypal_id').notNull(),
+    status: text('status').notNull(),
+    data: jsonb('data').notNull().default({}),
+    createdAt: tsz('created_at').notNull().defaultNow(),
+    updatedAt: tsz('updated_at').notNull().defaultNow(),
+  },
+  (t) => [index('seed_objects_kind_idx').on(t.kind)],
+);
+
+/** Free text from customers (support inbox). Always treated as UNTRUSTED by the agent. */
+export const customerNotes = pgTable(
+  'customer_notes',
+  {
+    id: uuid('id').primaryKey(),
+    source: text('source').notNull(),
+    externalRef: text('external_ref').notNull(),
+    body: text('body').notNull(),
+    receivedAt: tsz('received_at').notNull().defaultNow(),
+  },
+  (t) => [index('customer_notes_external_ref_idx').on(t.externalRef)],
+);

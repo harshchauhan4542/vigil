@@ -90,6 +90,18 @@ export const seedSchema = z.object({
   PAYPAL_SANDBOX_BUSINESS_EMAIL: optionalString,
   PAYPAL_SANDBOX_PERSONAL_EMAIL: optionalString,
   PAYPAL_SANDBOX_PERSONAL_PASSWORD: optionalString,
+  // Sandbox test card for single-step orders (no buyer redirect). Empty = buyer-approval links.
+  SEED_CARD_NUMBER: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.string().default('4111111111111111'),
+  ),
+  SEED_CARD_EXPIRY: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z
+      .string()
+      .regex(/^\d{4}-\d{2}$/)
+      .default('2030-12'),
+  ),
 });
 
 function formatIssues(error: z.ZodError): string[] {
