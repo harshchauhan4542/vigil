@@ -4,7 +4,7 @@
 // the in-process runner comes from ./inline-runner.ts, the single file allowed to load workflows.
 import path from 'node:path';
 import { createClaudeClient } from '@vigil/agent';
-import { loadWebEnv, type WebEnv } from '@vigil/config';
+import { ConfigError, loadWebEnv, type WebEnv } from '@vigil/config';
 import type { VigilMode } from '@vigil/core';
 import { createDb, createDbFixtureStore, type Db } from '@vigil/db';
 import type { GateDeps, ReceiveDeps } from '@vigil/gate';
@@ -22,6 +22,8 @@ type ClaudeClient = ReturnType<typeof createClaudeClient>;
 
 export interface Server {
   mode: VigilMode;
+  /** Set when Live was requested but couldn't run, so Replay is being served instead. */
+  fallback?: { from: 'live'; reason: string };
   env: WebEnv;
   db: Db;
   http: PayPalHttp;
@@ -105,8 +107,18 @@ async function buildCore(env: WebEnv, mode: VigilMode): Promise<Core> {
   return { db: handle.db, http, claude, store, policy: policyFromEnv(env) };
 }
 
+/** Env validated for a specific mode (Live requires keys; Replay doesn't). */
+export function envFor(mode: VigilMode): WebEnv {
+  return loadWebEnv({ ...process.env, VIGIL_MODE: mode });
+}
+
+/** The default mode from the environment, without validating the rest. */
+export function defaultMode(): VigilMode {
+  return process.env.VIGIL_MODE === 'live' ? 'live' : 'replay';
+}
+
 async function build(mode: VigilMode): Promise<Server> {
-  const env = loadWebEnv();
+  const env = envFor(mode);
   const core = await buildCore(env, mode);
   // Replay never reaches the network, so it always runs in-process.
   const runner: TaskRunner =
@@ -141,15 +153,36 @@ export function assemble(env: WebEnv, mode: VigilMode, core: Core, runner: TaskR
   };
 }
 
+const FALLBACK_RETRY_MS = 5 * 60_000;
+
+/** Live needs real keys; anything missing or broken falls back to Replay, said on screen. */
+async function buildLiveOrFallback(): Promise<Server> {
+  try {
+    return await build('live');
+  } catch (error) {
+    const replay = await build('replay');
+    const reason =
+      error instanceof ConfigError
+        ? error.issues.join('; ').slice(0, 200)
+        : (error as Error).message.split(String.fromCharCode(10))[0]!.slice(0, 200);
+    console.error(JSON.stringify({ event: 'live.fallback_to_replay', reason }));
+    return { ...replay, fallback: { from: 'live', reason } };
+  }
+}
+
 export async function getServer(mode?: VigilMode): Promise<Server> {
   if (g.__vigilTestServer) return g.__vigilTestServer;
-  const m = mode ?? loadWebEnv().VIGIL_MODE;
+  const m = mode ?? defaultMode();
   g.__vigilServers ??= new Map();
   let s = g.__vigilServers.get(m);
   if (!s) {
-    s = build(m);
+    s = m === 'live' ? buildLiveOrFallback() : build(m);
     s.catch(() => g.__vigilServers?.delete(m));
     g.__vigilServers.set(m, s);
+    // A fallback is temporary: try Live again later.
+    void s.then((srv) => {
+      if (srv.fallback) setTimeout(() => g.__vigilServers?.delete(m), FALLBACK_RETRY_MS).unref?.();
+    });
   }
   return s;
 }
