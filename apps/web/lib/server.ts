@@ -1,0 +1,155 @@
+// Server-side wiring for the web app: database, PayPal client and Claude client (both through
+// the record/replay transport), the task runner and the gate. One instance per mode, per process.
+// Never imports the money-moving actions; with TASK_RUNNER=inline (local dev) or in Replay mode
+// the in-process runner comes from ./inline-runner.ts, the single file allowed to load workflows.
+import path from 'node:path';
+import { createClaudeClient } from '@vigil/agent';
+import { loadWebEnv, type WebEnv } from '@vigil/config';
+import type { VigilMode } from '@vigil/core';
+import { createDb, createDbFixtureStore, type Db } from '@vigil/db';
+import type { GateDeps, ReceiveDeps } from '@vigil/gate';
+import { CertCache, createLogger, createPayPalClient, type PayPalHttp } from '@vigil/paypal';
+import { POLICY_V1, type PolicyConfig } from '@vigil/policy';
+import {
+  FileFixtureStore,
+  LayeredFixtureStore,
+  createReplayFetch,
+  type FixtureStore,
+} from '@vigil/replay';
+import { RenderTaskRunner, type TaskRunner } from '@vigil/tasks';
+
+type ClaudeClient = ReturnType<typeof createClaudeClient>;
+
+export interface Server {
+  mode: VigilMode;
+  env: WebEnv;
+  db: Db;
+  http: PayPalHttp;
+  claude: ClaudeClient | null;
+  runner: TaskRunner;
+  policy: PolicyConfig;
+  gate: GateDeps;
+  webhooks: ReceiveDeps;
+  store: FixtureStore;
+}
+
+export interface Core {
+  db: Db;
+  http: PayPalHttp;
+  claude: ClaudeClient | null;
+  store: FixtureStore;
+  policy: PolicyConfig;
+}
+
+const g = globalThis as unknown as {
+  __vigilServers?: Map<VigilMode, Promise<Server>>;
+  __vigilTestServer?: Server | null;
+};
+
+/** Tests inject a fully built server. */
+export function setServerForTests(server: Server | null) {
+  g.__vigilTestServer = server;
+}
+
+export function repoRoot(): string {
+  // next dev/start run with cwd = apps/web
+  return path.resolve(
+    process.cwd(),
+    process.cwd().endsWith(path.join('apps', 'web')) ? '../..' : '.',
+  );
+}
+
+export function policyFromEnv(env: WebEnv): PolicyConfig {
+  return {
+    ...POLICY_V1,
+    perActionCapCents: env.POLICY_PER_ACTION_CAP_USD * 100,
+    dailyCapCents: env.POLICY_DAILY_CAP_USD * 100,
+  };
+}
+
+async function buildCore(env: WebEnv, mode: VigilMode): Promise<Core> {
+  const root = repoRoot();
+  const handle = await createDb({
+    databaseUrl: env.DATABASE_URL,
+    pgliteDir: path.resolve(root, env.PGLITE_DIR),
+    migrationsDir: path.resolve(root, 'packages/db/migrations'),
+  });
+  await handle.migrate();
+  const store = new LayeredFixtureStore([
+    createDbFixtureStore(handle.db),
+    new FileFixtureStore(path.resolve(root, env.FIXTURES_DIR)),
+  ]);
+  const { http } = await createPayPalClient({
+    clientId: env.PAYPAL_CLIENT_ID ?? 'replay-client',
+    secret: env.PAYPAL_SECRET ?? 'replay-secret',
+    baseUrl: env.PAYPAL_BASE_URL,
+    redisUrl: env.REDIS_URL,
+    fetch: createReplayFetch({
+      mode,
+      kind: 'paypal',
+      store,
+      record: mode === 'live' && env.RECORD,
+      secrets: [env.PAYPAL_CLIENT_ID, env.PAYPAL_SECRET].filter((s): s is string => !!s),
+    }),
+    logger: createLogger(env.LOG_LEVEL),
+  });
+  const claude =
+    mode === 'replay' || env.ANTHROPIC_API_KEY
+      ? createClaudeClient({
+          mode,
+          apiKey: env.ANTHROPIC_API_KEY,
+          store,
+          record: mode === 'live' && env.RECORD,
+        })
+      : null;
+  return { db: handle.db, http, claude, store, policy: policyFromEnv(env) };
+}
+
+async function build(mode: VigilMode): Promise<Server> {
+  const env = loadWebEnv();
+  const core = await buildCore(env, mode);
+  // Replay never reaches the network, so it always runs in-process.
+  const runner: TaskRunner =
+    env.TASK_RUNNER === 'render' && mode === 'live'
+      ? new RenderTaskRunner({ apiKey: env.RENDER_API_KEY ?? '' })
+      : (await import('./inline-runner')).createInlineRunner(core, env, mode);
+  return assemble(env, mode, core, runner);
+}
+
+export function assemble(env: WebEnv, mode: VigilMode, core: Core, runner: TaskRunner): Server {
+  return {
+    mode,
+    env,
+    ...core,
+    runner,
+    gate: {
+      db: core.db,
+      http: core.http,
+      runner,
+      approvalSecret: env.APPROVAL_HMAC_SECRET!,
+      executionEnabled: env.EXECUTION_ENABLED,
+      policy: core.policy,
+    },
+    webhooks: {
+      db: core.db,
+      http: core.http,
+      runner,
+      certs: new CertCache(),
+      webhookId: env.PAYPAL_WEBHOOK_ID,
+      allowSimulated: env.ALLOW_SIMULATED_WEBHOOKS,
+    },
+  };
+}
+
+export async function getServer(mode?: VigilMode): Promise<Server> {
+  if (g.__vigilTestServer) return g.__vigilTestServer;
+  const m = mode ?? loadWebEnv().VIGIL_MODE;
+  g.__vigilServers ??= new Map();
+  let s = g.__vigilServers.get(m);
+  if (!s) {
+    s = build(m);
+    s.catch(() => g.__vigilServers?.delete(m));
+    g.__vigilServers.set(m, s);
+  }
+  return s;
+}

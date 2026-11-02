@@ -6,3 +6,5 @@ dist
 coverage
 packages/db/migrations
 fixtures/recordings
+.next-*
+.data

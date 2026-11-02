@@ -23,15 +23,19 @@
     "@vigil/replay": "workspace:*",
     "@vigil/scripts": "workspace:*",
     "@vigil/tasks": "workspace:*",
-    "uuid": "14.0.3"
+    "uuid": "14.0.3",
+    "msw": "3.0.3"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
     "@vigil/tsconfig": "workspace:*",
     "drizzle-orm": "0.45.4",
-    "msw": "3.0.3",
     "typescript": "5.9.3",
     "vitest": "5.0.5",
     "tsx": "4.23.15"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing/fake-paypal.ts"
   }
 }
