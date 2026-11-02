@@ -132,6 +132,13 @@ export class FakePayPal {
   private mutate(request: Request, op: string, apply: () => { status: number; body: Json | null }) {
     this.calls[op] = (this.calls[op] ?? 0) + 1;
     const rid = request.headers.get('paypal-request-id');
+    // Negative testing: PayPal-Mock-Response forces the error and applies no effect.
+    const mockHeader = request.headers.get('paypal-mock-response');
+    if (mockHeader) {
+      const code = (JSON.parse(mockHeader) as { mock_application_codes?: string })
+        .mock_application_codes;
+      return this.error(code === 'INTERNAL_SERVER_ERROR' ? 500 : 422, code);
+    }
     const failure = this.takeFailure(op);
     if (failure && !failure.afterEffect) return this.error(failure.status, failure.issue);
     let result = rid ? this.byRequestId.get(rid) : undefined;

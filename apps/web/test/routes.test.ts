@@ -56,6 +56,7 @@ beforeEach(async () => {
     claude: null,
     store: new MemoryFixtureStore(),
     policy: POLICY_V1,
+    now: () => new Date(),
   };
   server = assemble(env, 'live', core, createInlineRunner(core, env, 'live', true));
   setServerForTests(server);
