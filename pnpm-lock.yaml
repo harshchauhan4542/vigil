@@ -33,6 +33,43 @@ importers:
         specifier: 5.0.5
         version: 5.0.5(@types/node@22.20.5)(msw@3.0.3(@types/node@22.20.5)(typescript@5.9.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)))(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15))
 
+  apps/workflows:
+    dependencies:
+      '@vigil/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@vigil/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@vigil/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@vigil/detectors':
+        specifier: workspace:*
+        version: link:../../packages/detectors
+      '@vigil/paypal':
+        specifier: workspace:*
+        version: link:../../packages/paypal
+    devDependencies:
+      '@types/node':
+        specifier: 22.20.5
+        version: 22.20.5
+      '@vigil/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/tsconfig
+      drizzle-orm:
+        specifier: 0.45.4
+        version: 0.45.4(@electric-sql/pglite@0.5.14)(@types/pg@8.23.1)(pg@8.23.1)
+      msw:
+        specifier: 3.0.3
+        version: 3.0.3(@types/node@22.20.5)(typescript@5.9.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15))
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 5.0.5
+        version: 5.0.5(@types/node@22.20.5)(msw@3.0.3(@types/node@22.20.5)(typescript@5.9.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)))(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15))
+
   packages/agent:
     devDependencies:
       '@types/node':
@@ -127,6 +164,10 @@ importers:
         version: 5.0.5(@types/node@22.20.5)(msw@3.0.3(@types/node@22.20.5)(typescript@5.9.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)))(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15))
 
   packages/detectors:
+    dependencies:
+      '@vigil/core':
+        specifier: workspace:*
+        version: link:../core
     devDependencies:
       '@types/node':
         specifier: 22.20.5
