@@ -1,0 +1,7 @@
+{
+  "extends": "@vigil/tsconfig/node-lib.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["src", "test"]
+}
