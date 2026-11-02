@@ -3,9 +3,9 @@
 _Keep this file short. Claude updates it at the end of every session._
 
 **Last updated:** 2026-11-02
-**Current step:** Steps 0–5 built (one stacked PR per step, CI green). Steps 3–5 wait only on the live sandbox checks.
-**State:** All code and tests for Steps 0–5 done. Live checks not run yet: no `.env` with sandbox keys.
-**Next action:** User merges PRs #1–#6 in order and adds sandbox keys to `.env`. Then run `pnpm paypal:smoke`, `pnpm seed` (twice), `pnpm seed:check`, record spike S2 in `docs/spikes.md`, and mark 3–5 ✅. Then Step 6.
+**Current step:** Steps 0–15 coded (stacked PRs #1–#16, CI on each). P0 is complete in code and tests.
+**State:** Everything that needs no keys is done and green. Live checks (sandbox, Claude, webhooks), the Render deploy, fixtures recording, the video and the Devpost submission are waiting on you.
+**Next action:** You: merge PRs in order, add keys to `.env`, then follow docs/deploy.md. Me (when you say so): run the live checks for Steps 3–5, 9–11 and record Replay fixtures; then Step 16.
 
 ## Blockers
 
@@ -71,3 +71,4 @@ Legend: ☐ not started · 🟡 in progress · ✅ done · ❌ blocked
 | 2026-11-02 | 12       | ✅ Next.js API routes, gate behind approve, SSE, sessions, rate limits                                | [2026-11-02-step-12-web-api.md](2026-11-02-step-12-web-api.md)             |
 | 2026-11-02 | 13       | 🟡 Control room: AG Grid queue, Proposal Card, SSE, Studio analytics; spike S3 = Plan A               | [2026-11-02-step-13-control-room.md](2026-11-02-step-13-control-room.md)   |
 | 2026-11-02 | 14       | 🟡 render.yaml, bundled worker/cron, auto-fallback to Replay, deploy guide; deploy pending account    | [2026-11-02-step-14-render.md](2026-11-02-step-14-render.md)               |
+| 2026-11-02 | 15       | 🟡 README + Tools Statement, negative-testing, architecture, Devpost draft                            | [2026-11-02-step-15-submission.md](2026-11-02-step-15-submission.md)       |
