@@ -114,6 +114,9 @@ importers:
       '@vigil/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/tsconfig
+      drizzle-orm:
+        specifier: 0.45.4
+        version: 0.45.4(@electric-sql/pglite@0.5.14)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(pg@8.23.1)
       msw:
         specifier: 3.0.3
         version: 3.0.3(@types/node@22.20.5)(typescript@5.9.3)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15))
