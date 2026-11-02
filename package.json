@@ -19,7 +19,8 @@
     "paypal:smoke": "pnpm --filter @vigil/scripts paypal:smoke",
     "seed": "pnpm --filter @vigil/scripts seed",
     "seed:check": "pnpm --filter @vigil/scripts seed:check",
-    "flow": "pnpm --filter @vigil/workflows flow"
+    "flow": "pnpm --filter @vigil/workflows flow",
+    "dev": "pnpm --filter @vigil/web dev"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
