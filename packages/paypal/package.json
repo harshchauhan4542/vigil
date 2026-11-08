@@ -13,9 +13,19 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@vigil/tsconfig": "workspace:*",
     "@types/node": "22.20.5",
+    "@vigil/tsconfig": "workspace:*",
+    "msw": "3.0.3",
     "typescript": "5.9.3",
     "vitest": "5.0.5"
+  },
+  "dependencies": {
+    "@paypal/paypal-server-sdk": "2.5.0",
+    "@vigil/config": "workspace:*",
+    "@vigil/core": "workspace:*",
+    "ioredis": "6.0.0",
+    "pino": "10.4.0",
+    "uuid": "14.0.3",
+    "zod": "4.6.7"
   }
 }

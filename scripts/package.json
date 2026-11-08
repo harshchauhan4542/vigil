@@ -8,12 +8,14 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "db:migrate": "node --env-file-if-exists=../.env --import tsx src/db-migrate.ts",
-    "audit:verify": "node --env-file-if-exists=../.env --import tsx src/verify-audit-chain.ts"
+    "audit:verify": "node --env-file-if-exists=../.env --import tsx src/verify-audit-chain.ts",
+    "paypal:smoke": "node --env-file-if-exists=../.env --import tsx src/paypal-smoke.ts"
   },
   "dependencies": {
     "@vigil/config": "workspace:*",
     "@vigil/core": "workspace:*",
-    "@vigil/db": "workspace:*"
+    "@vigil/db": "workspace:*",
+    "@vigil/paypal": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
