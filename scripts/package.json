@@ -9,17 +9,22 @@
     "test": "vitest run --passWithNoTests",
     "db:migrate": "node --env-file-if-exists=../.env --import tsx src/db-migrate.ts",
     "audit:verify": "node --env-file-if-exists=../.env --import tsx src/verify-audit-chain.ts",
-    "paypal:smoke": "node --env-file-if-exists=../.env --import tsx src/paypal-smoke.ts"
+    "paypal:smoke": "node --env-file-if-exists=../.env --import tsx src/paypal-smoke.ts",
+    "seed": "node --env-file-if-exists=../.env --import tsx src/seed.ts",
+    "seed:check": "node --env-file-if-exists=../.env --import tsx src/seed-check.ts"
   },
   "dependencies": {
     "@vigil/config": "workspace:*",
     "@vigil/core": "workspace:*",
     "@vigil/db": "workspace:*",
-    "@vigil/paypal": "workspace:*"
+    "@vigil/paypal": "workspace:*",
+    "drizzle-orm": "0.45.4",
+    "uuid": "14.0.3"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
     "@vigil/tsconfig": "workspace:*",
+    "msw": "3.0.3",
     "tsx": "4.23.15",
     "typescript": "5.9.3",
     "vitest": "5.0.5"

@@ -173,3 +173,30 @@ export const authorizeOrder = (http: PayPalHttp, orderId: string, o: CreateOptio
 /** POST /v2/checkout/orders/{id}/capture (order must be APPROVED). */
 export const captureOrder = (http: PayPalHttp, orderId: string, o: CreateOptions) =>
   create<Order>(http, 'orders.capture', `/v2/checkout/orders/${enc(orderId)}/capture`, {}, o);
+
+export interface SeedTrackerInput {
+  order_id: string;
+  capture_id: string;
+  tracking_number: string;
+  carrier: string;
+}
+
+/**
+ * POST /v2/checkout/orders/{id}/track for demo data (same endpoint as actions.addTracking, but
+ * kept here so the seeder never imports the money-moving module). No PayPal-Request-Id exists;
+ * the seeder checks its seed_objects row before calling.
+ */
+export const seedTracker = (http: PayPalHttp, input: SeedTrackerInput) =>
+  http
+    .request<Order>({
+      method: 'POST',
+      path: `/v2/checkout/orders/${enc(input.order_id)}/track`,
+      operation: 'orders.track',
+      body: {
+        capture_id: input.capture_id,
+        tracking_number: input.tracking_number,
+        carrier: input.carrier,
+        notify_payer: false,
+      },
+    })
+    .then((r) => r.data);
