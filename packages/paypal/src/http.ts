@@ -3,6 +3,7 @@
 // 401 with a fresh token; optionally retries 429/5xx/network errors with the SAME request id.
 import { PayPalApiError, PayPalError, PayPalNetworkError, isRetryable } from './errors.js';
 import { redactBody, redactHeaders, silentLogger, type Logger } from './logger.js';
+import { MockNotSupportedError, isMockableOperation } from './mock-response.js';
 import type { TokenProvider } from './token.js';
 
 export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
@@ -60,6 +61,10 @@ export class PayPalHttp {
   }
 
   async request<T>(req: PayPalRequest): Promise<PayPalResponse<T>> {
+    // Defence in depth: the header is only honoured by Orders v2 / Payments v2.
+    if (req.mockResponseHeader && !isMockableOperation(req.operation)) {
+      throw new MockNotSupportedError(req.operation);
+    }
     const maxAttempts = 1 + (req.retries ?? 0);
     for (let attempt = 1; ; attempt++) {
       try {
