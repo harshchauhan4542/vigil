@@ -326,3 +326,22 @@ describe('audit log', () => {
     });
   });
 });
+
+describe('recordings fixture store', () => {
+  it('round-trips a recording', async () => {
+    const { createDbFixtureStore } = await import('../src/recordings.js');
+    const store = createDbFixtureStore(handle.db);
+    const rec = {
+      key: 'c'.repeat(64),
+      kind: 'paypal' as const,
+      request: { method: 'GET', url: '/v2/x', body: null },
+      response: { status: 200, headers: { 'content-type': 'application/json' }, body: '{"a":1}' },
+      recordedAt: '2026-11-02T00:00:00.000Z',
+    };
+    expect(await store.get('paypal', rec.key)).toBeNull();
+    await store.put(rec);
+    await store.put(rec);
+    expect(await store.get('paypal', rec.key)).toEqual(rec);
+    expect(await store.get('llm', rec.key)).toBeNull();
+  });
+});
