@@ -34,6 +34,13 @@ const forbidden = [
     "import '@anthropic-ai/sdk';",
   ],
   ['db imports paypal actions', 'packages/db/src/x.ts', "import '@vigil/paypal/actions';"],
+  ['scripts import paypal actions', 'scripts/src/seed.ts', "import '@vigil/paypal/actions';"],
+  [
+    'agent imports sandbox setup',
+    'packages/agent/src/x.ts',
+    "import '@vigil/paypal/sandbox-setup';",
+  ],
+  ['web imports sandbox setup', 'apps/web/lib/x.ts', "import '@vigil/paypal/sandbox-setup';"],
 ];
 
 const allowed = [
@@ -46,6 +53,12 @@ const allowed = [
   ['policy imports core', 'packages/policy/src/x.ts', "import '@vigil/core';"],
   ['detectors import core', 'packages/detectors/src/x.ts', "import '@vigil/core';"],
   ['paypal imports its own actions', 'packages/paypal/src/x.ts', "import './actions.js';"],
+  ['scripts import sandbox setup', 'scripts/src/seed.ts', "import '@vigil/paypal/sandbox-setup';"],
+  [
+    'workflows reseed imports sandbox setup',
+    'apps/workflows/src/tasks/reseed-demo.ts',
+    "import '@vigil/paypal/sandbox-setup';",
+  ],
 ];
 
 describe('trust-boundary import rules', () => {
