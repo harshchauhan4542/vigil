@@ -63,3 +63,4 @@ Legend: ☐ not started · 🟡 in progress · ✅ done · ❌ blocked
 | 2026-11-02 | 4        | 🟡 Reads, actions, sandbox setup, mock allowlist; live smoke pending         | [2026-11-02-step-04-paypal-calls.md](2026-11-02-step-04-paypal-calls.md)   |
 | 2026-11-02 | 5        | 🟡 Idempotent seeder + seed:check, tested on a fake PayPal; live run pending | [2026-11-02-step-05-seeder.md](2026-11-02-step-05-seeder.md)               |
 | 2026-11-02 | 6        | ✅ E3 + E4 detectors, scoring, detect_exceptions sync                        | [2026-11-02-step-06-detectors.md](2026-11-02-step-06-detectors.md)         |
+| 2026-11-02 | 7        | ✅ Policy R1–R10, approval tokens, typed T3 confirmation                     | [2026-11-02-step-07-policy.md](2026-11-02-step-07-policy.md)               |
