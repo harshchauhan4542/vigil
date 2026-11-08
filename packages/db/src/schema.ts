@@ -140,6 +140,8 @@ export const exceptions = pgTable(
     amountAtRiskCents: cents('amount_at_risk_cents'),
     currency: currency(),
     severity: smallint('severity').notNull().default(1),
+    /** Money at risk × urgency at detection time (queue order). */
+    score: bigint('score', { mode: 'number' }).notNull().default(0),
     deadlineAt: tsz('deadline_at'),
     status: text('status').notNull(),
     detectorVersion: text('detector_version').notNull(),
@@ -150,6 +152,7 @@ export const exceptions = pgTable(
   (t) => [
     unique('exceptions_type_target_uq').on(t.type, t.targetRef),
     index('exceptions_status_idx').on(t.status),
+    index('exceptions_score_idx').on(t.score),
   ],
 );
 
