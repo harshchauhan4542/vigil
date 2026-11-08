@@ -1,0 +1,24 @@
+{
+  "name": "@vigil/eslint-config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.js"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "echo 'no typescript sources'",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@eslint/js": "9.39.5",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "17.14.0",
+    "typescript-eslint": "8.72.1"
+  },
+  "devDependencies": {
+    "eslint": "9.39.5",
+    "vitest": "5.0.5"
+  }
+}
