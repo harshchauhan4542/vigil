@@ -114,6 +114,57 @@ export const getCaptureTool = defineTool({
   },
 });
 
+export const getSubscriptionTool = defineTool({
+  name: 'get_subscription',
+  description:
+    'Read a subscription live from PayPal: status, plan, outstanding balance, last failed payment (reason, time), next billing time.',
+  schema: z.strictObject({ subscription_id: PayPalId }),
+  async run({ subscription_id }, ctx) {
+    const s = await reads.getSubscription(ctx.http, subscription_id);
+    see(ctx, s.id, s.plan_id);
+    return {
+      id: s.id,
+      status: s.status,
+      plan_id: s.plan_id,
+      outstanding_balance: s.billing_info?.outstanding_balance ?? null,
+      failed_payments_count: s.billing_info?.failed_payments_count ?? null,
+      last_failed_payment: s.billing_info?.last_failed_payment ?? null,
+      last_payment: s.billing_info?.last_payment ?? null,
+      next_billing_time: s.billing_info?.next_billing_time ?? null,
+    };
+  },
+});
+
+export const getOrderTool = defineTool({
+  name: 'get_order',
+  description:
+    'Read an order live from PayPal: status, intent, purchase units with captures and any shipment trackers already attached.',
+  schema: z.strictObject({ order_id: PayPalId }),
+  async run({ order_id }, ctx) {
+    const o = await reads.getOrder(ctx.http, order_id);
+    see(ctx, o.id);
+    return {
+      id: o.id,
+      status: o.status,
+      intent: o.intent,
+      purchase_units: (o.purchase_units ?? []).map((pu) => {
+        for (const c of pu.payments?.captures ?? []) see(ctx, c.id);
+        return {
+          amount: pu.amount,
+          invoice_id: pu.invoice_id ?? null,
+          description: pu.description ? wrapUntrusted(pu.description, 'order_description') : null,
+          captures: (pu.payments?.captures ?? []).map((c) => ({
+            id: c.id,
+            status: c.status,
+            amount: c.amount,
+          })),
+          trackers: pu.shipping?.trackers ?? [],
+        };
+      }),
+    };
+  },
+});
+
 export const getLedgerEntriesTool = defineTool({
   name: 'get_ledger_entries',
   description:
@@ -174,6 +225,8 @@ export const READ_TOOLS: AgentTool[] = [
   getExceptionTool,
   getAuthorizationTool,
   getCaptureTool,
+  getSubscriptionTool,
+  getOrderTool,
   getLedgerEntriesTool,
   getPolicyLimitsTool,
   getSettlementTrailTool,

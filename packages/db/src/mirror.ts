@@ -145,3 +145,39 @@ export async function updateCaptureMirror(
     .set({ ...fields, syncedAt: now })
     .where(eq(ppCaptures.id, id));
 }
+
+export async function knownSubscriptionIds(db: Executor): Promise<string[]> {
+  const mirrored = await db.select({ id: ppSubscriptions.id }).from(ppSubscriptions);
+  const seeded = await db
+    .select({ id: seedObjects.paypalId })
+    .from(seedObjects)
+    .where(eq(seedObjects.kind, 'subscription'));
+  return [...new Set([...mirrored, ...seeded].map((r) => r.id).filter(Boolean))].sort();
+}
+
+export async function listSubscriptions(db: Executor) {
+  return db.select().from(ppSubscriptions);
+}
+
+/** Captures with the physical-goods flag of their order (default physical). */
+export async function listCapturesForDetection(db: Executor) {
+  const rows = await db
+    .select({ capture: ppCaptures, isPhysical: ppOrders.isPhysical })
+    .from(ppCaptures)
+    .leftJoin(ppOrders, eq(ppOrders.id, ppCaptures.orderId));
+  return rows.map((r) => ({ ...r.capture, isPhysical: r.isPhysical ?? true }));
+}
+
+export async function getSubscriptionMirror(db: Executor, id: string) {
+  const [row] = await db.select().from(ppSubscriptions).where(eq(ppSubscriptions.id, id));
+  return row ?? null;
+}
+
+/** Capture ids with the order id the seeder recorded (order id is needed for /track). */
+export async function seededCaptureOrders(db: Executor): Promise<Map<string, string>> {
+  const rows = await db
+    .select({ cap: sql<string>`${seedObjects.data}->>'capture_id'`, order: seedObjects.paypalId })
+    .from(seedObjects)
+    .where(sql`${seedObjects.data} ? 'capture_id'`);
+  return new Map(rows.map((r) => [r.cap, r.order]));
+}

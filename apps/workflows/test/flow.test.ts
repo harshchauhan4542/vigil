@@ -72,7 +72,7 @@ function makeCtx(script: FakeScript, overrides: Partial<WorkflowContext> = {}) {
   env.server.use(claude.handler());
   const client = createClaudeClient({
     mode: 'live',
-    apiKey: 'sk-ant-test',
+    apiKey: 'fake-anthropic-test',
     store: new MemoryFixtureStore(),
   });
   const runner = new InlineTaskRunner();

@@ -10,3 +10,7 @@ coverage/
 .DS_Store
 .data/
 *.tsbuildinfo
+.next-*/
+.next-e2e
+test-results
+playwright-report

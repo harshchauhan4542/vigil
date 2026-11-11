@@ -15,6 +15,7 @@ import type { TaskHandlers } from '@vigil/tasks';
 import { gateDeps, type WorkflowContext } from '../context.js';
 import { detectExceptions } from '../sync/detect.js';
 import { executeProposal, type ExecuteOptions } from './execute-proposal.js';
+import { processWebhookTask } from './process-webhook.js';
 
 const actor = (id: string): Actor => ({ type: 'system', id });
 
@@ -144,6 +145,7 @@ export function buildHandlers(getCtx: () => Promise<WorkflowContext>): TaskHandl
     execute_proposal: async (id, token, opts) =>
       executeProposal(await getCtx(), String(id), String(token), (opts ?? {}) as ExecuteOptions),
     settle_check: async () => settleCheckTask(await getCtx()),
+    process_webhook: async (id) => processWebhookTask(await getCtx(), String(id)),
     reconcile_window: async (days) =>
       reconcileWindowTask(await getCtx(), days as number | undefined),
     reseed_demo: async (cohort) => reseedTask(await getCtx(), cohort as string | undefined),

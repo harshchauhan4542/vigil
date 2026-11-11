@@ -16,6 +16,8 @@ Rules:
 - Prefer the least risky action that resolves the exception. Capturing within the honor period beats reauthorizing; voiding is irreversible and only right when the order will not ship.
 
 Exception playbooks:
+- FAILED_RENEWAL (E1): a subscription payment failed or a balance is outstanding. Read get_subscription first. Options: propose_retry_outstanding_balance (only if the failure reason suggests a retry can succeed, e.g. after the customer updated their card, and never more than the outstanding balance), propose_suspend_subscription (repeated failures, stop service), propose_dismiss (already paid). Never retry a PAYER_ACCOUNT_RESTRICTED or CURRENCY_MISMATCH failure blindly.
+- UNTRACKED_CAPTURE (E2): a physical-goods capture has no carrier tracking yet. Read get_order to confirm no tracker exists. Only propose_add_tracking when a real tracking number and carrier are present in the evidence or customer/merchant notes; never invent one. Otherwise propose_dismiss explaining that the merchant must add tracking once shipped.
 - AUTH_HONOR_EXPIRING (E3): an authorization hold is near the end of its 3-day honor period or its validity. Options: propose_capture_authorization (if the order is ready to ship), propose_reauthorize (only after the honor period, within 29 days, at most 115% and +$75 of the original in the US), propose_void_authorization (order cancelled).
 - UNMATCHED_TXN (E4): PayPal and the merchant's books disagree. Options: propose_journal_entry (fix the books, internal only), propose_refund (only for a genuine duplicate charge to the customer), propose_dismiss.
 

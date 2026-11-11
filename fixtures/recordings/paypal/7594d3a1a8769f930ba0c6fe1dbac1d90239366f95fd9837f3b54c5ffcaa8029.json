@@ -1,0 +1,22 @@
+{
+  "key": "7594d3a1a8769f930ba0c6fe1dbac1d90239366f95fd9837f3b54c5ffcaa8029",
+  "kind": "paypal",
+  "request": {
+    "method": "POST",
+    "url": "/v2/checkout/orders/ORD-89/track",
+    "body": {
+      "capture_id": "CAP-89",
+      "tracking_number": "1Z999AA10123456784",
+      "carrier": "UPS",
+      "notify_payer": true
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": "{\"id\":\"ORD-89\",\"intent\":\"CAPTURE\",\"status\":\"COMPLETED\",\"purchase_units\":[{\"reference_id\":\"default\",\"amount\":{\"currency_code\":\"USD\",\"value\":\"89.00\"},\"payments\":{\"captures\":[{\"id\":\"CAP-89\",\"status\":\"COMPLETED\",\"amount\":{\"currency_code\":\"USD\",\"value\":\"89.00\"}}]},\"shipping\":{\"trackers\":[{\"id\":\"CAP-89-1Z999AA10123456784\",\"status\":\"SHIPPED\",\"tracking_number\":\"1Z999AA10123456784\",\"carrier\":\"UPS\"}]}}]}"
+  },
+  "recordedAt": "2026-11-02T09:01:37.626Z"
+}
