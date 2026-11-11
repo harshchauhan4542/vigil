@@ -16,6 +16,7 @@ export class FakePayPal {
   captures = new Map<string, Json>();
   orders = new Map<string, Json>();
   transactions: Json[] = [];
+  subscriptions = new Map<string, Json>();
   /** Every state-changing effect actually applied (after idempotency). */
   effects: { op: string; id: string; requestId: string | null }[] = [];
   /** Calls received per operation, including replays. */
@@ -49,6 +50,45 @@ export class FakePayPal {
       amount: money(amountCents),
       refunded_cents: 0,
       ...over,
+    });
+  }
+
+  addSubscription(id: string, outstandingCents: number, over: Json = {}) {
+    this.subscriptions.set(id, {
+      id,
+      plan_id: 'P-PLAN',
+      status: 'ACTIVE',
+      billing_info: {
+        outstanding_balance: money(outstandingCents),
+        failed_payments_count: outstandingCents > 0 ? 1 : 0,
+        last_failed_payment:
+          outstandingCents > 0
+            ? {
+                amount: money(outstandingCents),
+                time: new Date(Date.now() - 10 * 3_600_000).toISOString(),
+                reason_code: 'PAYMENT_DENIED',
+              }
+            : undefined,
+      },
+      ...over,
+    });
+  }
+
+  addOrder(id: string, captureId: string, amountCents: number) {
+    this.orders.set(id, {
+      id,
+      intent: 'CAPTURE',
+      status: 'COMPLETED',
+      purchase_units: [
+        {
+          reference_id: 'default',
+          amount: money(amountCents),
+          payments: {
+            captures: [{ id: captureId, status: 'COMPLETED', amount: money(amountCents) }],
+          },
+          shipping: { trackers: [] },
+        },
+      ],
     });
   }
 
@@ -92,6 +132,13 @@ export class FakePayPal {
   private mutate(request: Request, op: string, apply: () => { status: number; body: Json | null }) {
     this.calls[op] = (this.calls[op] ?? 0) + 1;
     const rid = request.headers.get('paypal-request-id');
+    // Negative testing: PayPal-Mock-Response forces the error and applies no effect.
+    const mockHeader = request.headers.get('paypal-mock-response');
+    if (mockHeader) {
+      const code = (JSON.parse(mockHeader) as { mock_application_codes?: string })
+        .mock_application_codes;
+      return this.error(code === 'INTERNAL_SERVER_ERROR' ? 500 : 422, code);
+    }
     const failure = this.takeFailure(op);
     if (failure && !failure.afterEffect) return this.error(failure.status, failure.issue);
     let result = rid ? this.byRequestId.get(rid) : undefined;
@@ -150,6 +197,80 @@ export class FakePayPal {
           return d >= s && d < e;
         });
         return HttpResponse.json({ transaction_details: rows, page: 1, total_pages: 1 });
+      }),
+      http.get(`${BASE}/v1/billing/subscriptions/:id`, ({ params }) => {
+        const sub = this.subscriptions.get(String(params.id));
+        return sub ? HttpResponse.json(sub) : notFound();
+      }),
+      http.post(`${BASE}/v1/billing/subscriptions/:id/capture`, async ({ request, params }) => {
+        const body = (await request.json()) as Json;
+        return this.mutate(request, 'subscriptions.capture', () => {
+          const sub = this.subscriptions.get(String(params.id));
+          if (!sub) return { status: 404, body: { name: 'RESOURCE_NOT_FOUND' } };
+          const owed = cents(sub.billing_info.outstanding_balance.value);
+          if (owed === 0 || cents(body.amount.value) > owed)
+            return this.unprocessable('AMOUNT_GREATER_THAN_OUTSTANDING_BALANCE');
+          sub.billing_info.outstanding_balance = money(owed - cents(body.amount.value));
+          return {
+            status: 202,
+            body: {
+              id: this.nextId('TXN'),
+              status: 'COMPLETED',
+              amount_with_breakdown: { gross_amount: body.amount },
+            },
+          };
+        });
+      }),
+      http.post(`${BASE}/v1/billing/subscriptions/:id/suspend`, ({ request, params }) =>
+        this.mutate(request, 'subscriptions.suspend', () => {
+          const sub = this.subscriptions.get(String(params.id));
+          if (!sub) return { status: 404, body: { name: 'RESOURCE_NOT_FOUND' } };
+          if (sub.status !== 'ACTIVE') return this.unprocessable('SUBSCRIPTION_STATUS_INVALID');
+          sub.status = 'SUSPENDED';
+          return { status: 204, body: null };
+        }),
+      ),
+      http.get(`${BASE}/v2/checkout/orders/:id`, ({ params }) => {
+        const o = this.orders.get(String(params.id));
+        return o ? HttpResponse.json(o) : notFound();
+      }),
+      http.post(`${BASE}/v2/checkout/orders/:id/track`, async ({ request, params }) => {
+        const body = (await request.json()) as Json;
+        return this.mutate(request, 'orders.track', () => {
+          const o = this.orders.get(String(params.id));
+          if (!o) return { status: 404, body: { name: 'RESOURCE_NOT_FOUND' } };
+          const pu = o.purchase_units[0];
+          if (!pu.payments.captures.some((c: Json) => c.id === body.capture_id))
+            return this.unprocessable('CAPTURE_STATUS_NOT_VALID');
+          pu.shipping.trackers.push({
+            id: `${body.capture_id}-${body.tracking_number}`,
+            status: 'SHIPPED',
+            tracking_number: body.tracking_number,
+            carrier: body.carrier,
+          });
+          return { status: 201, body: o };
+        });
+      }),
+      http.get(`${BASE}/v1/shipping/trackers`, ({ request }) => {
+        const capId = new URL(request.url).searchParams.get('transaction_id');
+        const trackers = [...this.orders.values()].flatMap((o) =>
+          o.purchase_units[0].payments.captures.some((c: Json) => c.id === capId)
+            ? o.purchase_units[0].shipping.trackers.map((t: Json) => ({
+                transaction_id: capId,
+                ...t,
+              }))
+            : [],
+        );
+        return HttpResponse.json({ trackers });
+      }),
+      http.get(`${BASE}/v1/customer/disputes`, ({ request }) => {
+        const id = new URL(request.url).searchParams.get('disputed_transaction_id');
+        const c = id ? this.captures.get(id) : undefined;
+        return HttpResponse.json({
+          items: c?.disputed
+            ? [{ dispute_id: 'PP-D-1', status: 'WAITING_FOR_SELLER_RESPONSE' }]
+            : [],
+        });
       }),
       http.post(`${BASE}/v2/payments/authorizations/:id/capture`, async ({ request, params }) => {
         const body = (await request.json()) as Json;

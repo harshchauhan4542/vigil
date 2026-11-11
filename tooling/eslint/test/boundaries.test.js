@@ -45,6 +45,10 @@ const forbidden = [
     'apps/workflows/src/x.ts',
     "import '@paypal/agent-toolkit/openai';",
   ],
+  ['gate imports the LLM SDK', 'packages/gate/src/x.ts', "import '@anthropic-ai/sdk';"],
+  ['gate imports the agent', 'packages/gate/src/x.ts', "import '@vigil/agent';"],
+  ['gate imports paypal actions', 'packages/gate/src/x.ts', "import '@vigil/paypal/actions';"],
+  ['web route imports workflows', 'apps/web/app/api/x/route.ts', "import '@vigil/workflows';"],
   ['scripts import paypal actions', 'scripts/src/seed.ts', "import '@vigil/paypal/actions';"],
   [
     'agent imports sandbox setup',
@@ -68,6 +72,11 @@ const allowed = [
     'toolkit adapter imports the toolkit',
     'packages/agent/src/toolkit-adapter.ts',
     "import '@paypal/agent-toolkit/openai';",
+  ],
+  [
+    'web inline runner imports workflows',
+    'apps/web/lib/inline-runner.ts',
+    "import '@vigil/workflows';",
   ],
   ['scripts import sandbox setup', 'scripts/src/seed.ts', "import '@vigil/paypal/sandbox-setup';"],
   [

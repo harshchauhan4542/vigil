@@ -1,0 +1,29 @@
+{
+  "name": "@vigil/gate",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@vigil/core": "workspace:*",
+    "@vigil/db": "workspace:*",
+    "@vigil/paypal": "workspace:*",
+    "@vigil/policy": "workspace:*",
+    "@vigil/tasks": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@vigil/tsconfig": "workspace:*",
+    "msw": "3.0.3",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}

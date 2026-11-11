@@ -156,6 +156,7 @@ export const webEnvSchema = paypalSchema
   .extend(aiSchema.shape)
   .extend(secretsSchema.shape)
   .extend({ AG_STUDIO: optionalString })
+  .extend(seedSchema.shape)
   .superRefine(requireInLive(['PAYPAL_CLIENT_ID', 'PAYPAL_SECRET', 'ANTHROPIC_API_KEY']))
   .superRefine((v, ctx) => {
     for (const key of ['APPROVAL_HMAC_SECRET', 'SESSION_SECRET']) {

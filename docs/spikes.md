@@ -35,3 +35,17 @@ The SDK also accepts `clientCredentialsAuthCredentials.oAuthTokenProvider`, so i
 **Status:** ⏳ **not yet verified live** (no sandbox keys yet). First live run decides: if card orders are refused (e.g. the sandbox business account lacks advanced card processing), fall back to Plan B. Record the result here.
 
 **Hold ages:** the sandbox cannot backdate an authorization, so honor-period ages come from time passing: run `pnpm seed --cohort` daily (nightly job later) to add a dated cohort, so some holds are near the 72 h honor limit on demo day.
+
+## S3 (Step 13): AG Studio custom runner and model adapter — Plan A or Plan B?
+
+**Method:** read the `ag-studio` / `ag-studio-react` 3.0.0 type definitions (2026-11-02).
+
+**Findings**
+
+- `ag-studio-react` exports `AgStudioProvider` (`licenseKey`, `modules`), `AgStudio` (props = `AgStudioProperties`: `data: { sources: [...] }`, `mode: 'view' | 'edit'`, `initialState`, `widgets`, `ai`, `theme`, …), `createWidgets`, `GridWidget`, `PivotGridWidget`.
+- Custom widgets: `AgWidgetDefinition { id, label, icon, dataMapping, form(params), defaultState, comp }` registered through `createWidgets({ additionalTypes, menu })`.
+- AI: `createAiHarness(api, builder | { adapter, primary })`; the builder receives harness tools incl. `delegateTo(targetIds)`. The model is behind **`AgLlmAdapter.executeTurn(request) → { stream: AsyncIterable<AgAiEvent>, complete: Promise<AgLlmResponse> }`**, where `request = { input, instructions, tools, toolChoice: 'auto' | 'none' | 'required' | {name}, responseFormat: text | json-schema, model }`. It is provider-neutral.
+
+**Decision: Plan A (Claude for Studio's built-in agents too) is feasible.** An `anthropic-adapter.ts` maps `AgLlmRequest` → a server proxy (`/api/ai`) → the Claude Messages API, and Claude's stream → `AgAiEvent`s. Note: `toolChoice: 'required'` / `{name}` must become `auto` + an instruction on `claude-opus-5-5` (forced tool use is a 400 there); `claude-sonnet-5` accepts forced tool choice. Built in Step 18 with the custom Vigil Ops agent.
+
+**Step 13 scope actually shipped:** the queue is an AG Grid (Community) grid and the Proposal Card is a React component next to it; AG Studio renders an analytics panel over the `exceptions` source. Moving the queue + Proposal Card _into_ Studio as custom widgets with a frozen `initial-report.ts` is Step 17.

@@ -493,6 +493,7 @@ export async function getWebhookEvent(db: Executor, eventId: string) {
 }
 
 export interface WebhookTransitionExtras {
+  simulated?: boolean;
   verificationMethod?: string;
   verificationStatus?: string;
   error?: string | null;
@@ -552,4 +553,95 @@ export async function finishAgentRun(db: Executor, id: string, input: FinishAgen
 export async function getAgentRun(db: Executor, id: string) {
   const [row] = await db.select().from(agentRuns).where(eq(agentRuns.id, id));
   return row ?? null;
+}
+
+/** Open proposals on a target, excluding one proposal (R6 input). */
+export async function countOtherOpenProposals(db: Executor, targetRef: string, excludeId: string) {
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(proposals)
+    .where(
+      and(
+        eq(proposals.targetRef, targetRef),
+        inArray(proposals.status, [...OPEN_PROPOSAL_STATUSES]),
+        sql`${proposals.id} <> ${excludeId}`,
+      ),
+    );
+  return row?.n ?? 0;
+}
+
+/** Money moved by successful proposals since `since` (R5 daily cap input). One row per proposal. */
+export async function executedCentsSince(
+  db: Executor,
+  since: Date,
+  actionTypes: readonly string[],
+) {
+  const [row] = await db
+    .select({ cents: sql<string>`coalesce(sum(abs(${proposals.amountCents})), 0)` })
+    .from(proposals)
+    .where(
+      and(
+        inArray(proposals.status, ['SUCCEEDED', 'SETTLED']),
+        inArray(proposals.actionType, [...actionTypes]),
+        sql`exists (select 1 from ${executions} where ${executions.proposalId} = ${proposals.id}
+          and ${executions.httpStatus} between 200 and 299 and ${executions.finishedAt} >= ${since})`,
+      ),
+    );
+  return Number(row?.cents ?? 0);
+}
+
+export async function listProposalsByStatus(db: Executor, statuses: readonly ProposalStatus[]) {
+  return db
+    .select()
+    .from(proposals)
+    .where(inArray(proposals.status, [...statuses]));
+}
+
+export async function setProposalPolicy(
+  db: Executor,
+  id: string,
+  fields: {
+    policyVersion: string;
+    policyResult: unknown;
+    riskTier: number;
+    expiresAt?: Date | null;
+  },
+) {
+  await db.update(proposals).set(fields).where(eq(proposals.id, id));
+}
+
+/**
+ * Move an exception to `to` from whatever state it is in now, if the state machine allows it.
+ * Returns false (and changes nothing) when it is already there or the move isn't allowed.
+ */
+export async function advanceException(
+  db: Executor,
+  id: string,
+  to: ExceptionStatus,
+  actor: Actor,
+  payload: Record<string, unknown> = {},
+): Promise<boolean> {
+  const current = await getException(db, id);
+  if (!current || current.status === to) return false;
+  const from = current.status as ExceptionStatus;
+  if (!exceptionMachine.canTransition(from, to)) return false;
+  try {
+    await transitionException(db, id, from, to, actor, payload);
+    return true;
+  } catch (error) {
+    if (error instanceof StaleStateError) return false;
+    throw error;
+  }
+}
+
+/** Proposals whose successful execution created/affected this PayPal resource id. */
+export async function findProposalsByResource(db: Executor, resourceId: string) {
+  return db
+    .selectDistinct({ proposal: proposals })
+    .from(proposals)
+    .innerJoin(executions, eq(executions.proposalId, proposals.id))
+    .where(
+      sql`(${executions.response}->>'id' = ${resourceId} or ${proposals.targetRef} like ${'%:' + resourceId})`,
+    )
+    .then((rows) => rows.map((r) => r.proposal));
 }
