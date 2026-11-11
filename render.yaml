@@ -1,0 +1,73 @@
+# Render Blueprint for Vigil (docs/deploy.md has the click-by-click steps).
+# The Workflow service (execute/triage/detect tasks) can't be declared in a Blueprint yet:
+# create it in the dashboard and attach the `vigil-shared` environment group to it.
+envVarGroups:
+  # One group for every service: the web app MINTS approval tokens and the workflow service
+  # VERIFIES them, so they must share APPROVAL_HMAC_SECRET.
+  - name: vigil-shared
+    envVars:
+      - { key: NODE_VERSION, value: '22.15.1' }
+      - { key: VIGIL_MODE, value: live }
+      - { key: TASK_RUNNER, value: render }
+      - { key: PAYPAL_BASE_URL, value: 'https://api-m.sandbox.paypal.com' }
+      - { key: EXECUTION_ENABLED, value: 'true' }
+      - { key: POLICY_PER_ACTION_CAP_USD, value: '500' }
+      - { key: POLICY_DAILY_CAP_USD, value: '2000' }
+      - { key: AI_DAILY_TOKEN_BUDGET, value: '2000000' }
+      - { key: VIGIL_MODEL_INTERACTIVE, value: claude-sonnet-5 }
+      - { key: VIGIL_MODEL_BATCH, value: claude-opus-5-5 }
+      - { key: ALLOW_SIMULATED_WEBHOOKS, value: 'false' }
+      - { key: APPROVAL_HMAC_SECRET, generateValue: true }
+      - { key: SESSION_SECRET, generateValue: true }
+      # Secrets you paste in the dashboard (never stored in git):
+      - { key: PAYPAL_CLIENT_ID, sync: false }
+      - { key: PAYPAL_SECRET, sync: false }
+      - { key: PAYPAL_WEBHOOK_ID, sync: false }
+      - { key: ANTHROPIC_API_KEY, sync: false }
+      - { key: RENDER_API_KEY, sync: false }
+      - { key: AG_STUDIO, sync: false }
+
+databases:
+  - name: vigil-db
+    plan: basic-256mb
+    postgresMajorVersion: '16'
+
+services:
+  - type: keyvalue
+    name: vigil-kv
+    plan: starter
+    ipAllowList: [] # internal connections only
+
+  - type: web
+    name: vigil-web
+    runtime: node
+    plan: starter
+    buildCommand: npm install -g pnpm@10.34.9 && pnpm install --frozen-lockfile && pnpm turbo run build --filter=@vigil/web
+    startCommand: pnpm --filter @vigil/web start -p $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - fromGroup: vigil-shared
+      - key: DATABASE_URL
+        fromDatabase: { name: vigil-db, property: connectionString }
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: vigil-kv, property: connectionString }
+
+  - type: cron
+    name: vigil-detect
+    runtime: node
+    plan: starter
+    schedule: '*/15 * * * *'
+    buildCommand: npm install -g pnpm@10.34.9 && pnpm install --frozen-lockfile && pnpm turbo run build --filter=@vigil/workflows
+    startCommand: node apps/workflows/dist/cron.js
+    envVars:
+      - fromGroup: vigil-shared
+
+  - type: cron
+    name: vigil-nightly-reseed
+    runtime: node
+    plan: starter
+    schedule: '30 2 * * *' # 08:00 IST
+    buildCommand: npm install -g pnpm@10.34.9 && pnpm install --frozen-lockfile && pnpm turbo run build --filter=@vigil/workflows
+    startCommand: node apps/workflows/dist/cron.js --nightly
+    envVars:
+      - fromGroup: vigil-shared

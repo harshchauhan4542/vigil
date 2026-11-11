@@ -3,9 +3,9 @@
 _Keep this file short. Claude updates it at the end of every session._
 
 **Last updated:** 2026-11-02
-**Current step:** Steps 0–5 built (one stacked PR per step, CI green). Steps 3–5 wait only on the live sandbox checks.
-**State:** All code and tests for Steps 0–5 done. Live checks not run yet: no `.env` with sandbox keys.
-**Next action:** User merges PRs #1–#6 in order and adds sandbox keys to `.env`. Then run `pnpm paypal:smoke`, `pnpm seed` (twice), `pnpm seed:check`, record spike S2 in `docs/spikes.md`, and mark 3–5 ✅. Then Step 6.
+**Current step:** All 21 steps (0–20) are coded; stacked PRs #1–#21 with CI (incl. Playwright e2e from Step 19).
+**State:** Everything that can be built and tested without your accounts is done and green, including a zero-key Replay demo (`pnpm demo`, currently synthetic data). Live checks, the deploy, real recordings, the video and the Devpost submission are waiting on you.
+**Next action:** You: merge PRs in order, add keys, follow docs/deploy.md and docs/final-checklist.md. Me (when asked): run the live checks (Steps 3–5, 9–11, 16, 18), record real fixtures, fix anything the sandbox surfaces.
 
 ## Blockers
 
@@ -68,3 +68,12 @@ Legend: ☐ not started · 🟡 in progress · ✅ done · ❌ blocked
 | 2026-11-02 | 9        | 🟡 Claude tool loop, read/propose tools, toolkit quarantine, replayable; live fixtures pending key    | [2026-11-02-step-09-agent.md](2026-11-02-step-09-agent.md)                 |
 | 2026-11-02 | 10       | 🟡 Task runner, gate, execute/triage/detect/settle tasks; exactly-once proven in tests; live pending  | [2026-11-02-step-10-tasks.md](2026-11-02-step-10-tasks.md)                 |
 | 2026-11-02 | 11       | 🟡 Webhook verify (postback + self + simulator rule), receiver, process_webhook; real webhook pending | [2026-11-02-step-11-webhooks.md](2026-11-02-step-11-webhooks.md)           |
+| 2026-11-02 | 12       | ✅ Next.js API routes, gate behind approve, SSE, sessions, rate limits                                | [2026-11-02-step-12-web-api.md](2026-11-02-step-12-web-api.md)             |
+| 2026-11-02 | 13       | 🟡 Control room: AG Grid queue, Proposal Card, SSE, Studio analytics; spike S3 = Plan A               | [2026-11-02-step-13-control-room.md](2026-11-02-step-13-control-room.md)   |
+| 2026-11-02 | 14       | 🟡 render.yaml, bundled worker/cron, auto-fallback to Replay, deploy guide; deploy pending account    | [2026-11-02-step-14-render.md](2026-11-02-step-14-render.md)               |
+| 2026-11-02 | 15       | 🟡 README + Tools Statement, negative-testing, architecture, Devpost draft                            | [2026-11-02-step-15-submission.md](2026-11-02-step-15-submission.md)       |
+| 2026-11-02 | 16       | 🟡 E1 + E2 detectors, sync, agent tools, e2e tests                                                    | [2026-11-02-step-16-e1-e2.md](2026-11-02-step-16-e1-e2.md)                 |
+| 2026-11-02 | 17       | 🟡 W1, W2, W4, /audit, /judge, simulate-failure toggle                                                | [2026-11-02-step-17-widgets.md](2026-11-02-step-17-widgets.md)             |
+| 2026-11-02 | 18       | 🟡 Claude adapter for Studio agents, Vigil Ops agent, delegation harness                              | [2026-11-02-step-18-studio-agent.md](2026-11-02-step-18-studio-agent.md)   |
+| 2026-11-02 | 19       | ✅ Zero-key Replay world, Playwright e2e in CI, pnpm demo, security scan, Postman                     | [2026-11-02-step-19-hardening.md](2026-11-02-step-19-hardening.md)         |
+| 2026-11-02 | 20       | 🟡 Final README, Devpost draft, final + keep-alive checklist                                          | [2026-11-02-step-20-final.md](2026-11-02-step-20-final.md)                 |
