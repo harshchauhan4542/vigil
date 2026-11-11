@@ -1,0 +1,17 @@
+{
+  "key": "059d38cf95fe175f10cd825ad2c814d825f056a247991a7f75db0ffba0ed3b1a",
+  "kind": "paypal",
+  "request": {
+    "method": "GET",
+    "url": "/v2/payments/authorizations/AUTH-48",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": "{\"id\":\"AUTH-48\",\"status\":\"CREATED\",\"amount\":{\"currency_code\":\"USD\",\"value\":\"48.00\"},\"create_time\":\"2026-11-02T23:00:00.000Z\",\"expiration_time\":\"2026-12-01T23:00:00.000Z\",\"supplementary_data\":{\"related_ids\":{\"order_id\":\"ORDER-AUTH-48\"}}}"
+  },
+  "recordedAt": "2026-11-02T09:01:36.493Z"
+}

@@ -101,3 +101,25 @@ describe('detectExceptions', () => {
     expect(s.authorizationsSynced).toBe(2);
   });
 });
+
+describe('Transaction Search not enabled on the PayPal app', () => {
+  it('skips E4 (no false "missing in PayPal") but still detects E3', async () => {
+    const { http: mswHttp, HttpResponse } = await import('msw');
+    await seedWorld();
+    env.server.use(
+      mswHttp.get('https://api-m.sandbox.paypal.com/v1/reporting/transactions', () =>
+        HttpResponse.json(
+          {
+            name: 'NOT_AUTHORIZED',
+            message: 'Authorization failed due to insufficient permissions.',
+          },
+          { status: 403 },
+        ),
+      ),
+    );
+    const s = await detectExceptions({ db: env.handle.db, http: env.http, now: NOW });
+    expect(s.transactionsSynced).toBeNull();
+    const types = (await listExceptions(env.handle.db)).map((e) => e.type);
+    expect(types).toEqual(['AUTH_HONOR_EXPIRING']);
+  });
+});
