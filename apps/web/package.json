@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --env-file-if-exists=../../.env node_modules/next/dist/bin/next dev --webpack",
+    "dev": "next dev --webpack",
     "build": "next build --webpack",
-    "start": "node --env-file-if-exists=../../.env node_modules/next/dist/bin/next start",
+    "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

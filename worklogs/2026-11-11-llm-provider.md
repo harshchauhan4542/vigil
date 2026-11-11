@@ -33,3 +33,13 @@
 
 - `.env` was in the parent folder, then had `hhtps://` in `LLM_BASE_URL` → moved by user; typo fixed.
 - A leftover `next start` held port 3000, so the first e2e run hit the old build → killed it and reran.
+
+## Later the same day: merchant-friendly UI, themes, fixes
+
+- Redesigned `apps/web` for non-technical merchants (frontend-design skill): plain-language labels for every code (`app/ui/labels.ts`), status pills, a deadline timeline band, a full-width problem list, a "Suggested fix" card (what it does, why, safety checks summary, Approve / Say no; IDs and JSON under "Technical details"), pages renamed Problems / History / Help, Replay shown as "Demo".
+- Soft low-glare light theme ("morning mist", default) plus a dark theme ("evening mist") behind a sun/moon toggle, remembered in localStorage and applied before first paint. AG Grid and AG Studio follow the CSS tokens.
+- Fixed: `pnpm dev` crashed (`--env-file-if-exists` is rejected in NODE_OPTIONS); `next.config.ts` now loads `vigil/.env` without overriding existing values.
+- Fixed: Demo mode broke when `.env` set Groq models (the model is part of each recording key). `envFor('replay')` now ignores `LLM_PROVIDER` / `VIGIL_MODEL_*`.
+- Fixed: the "7 issues" in the Next dev badge were AG Studio's licence banner (console.error); filtered only those lines (watermark still shows). Empty data shows an empty state. Dev indicator and agent-file generation turned off in `next.config.ts`.
+- Owner asked that Claude not appear as a GitHub contributor: no `Co-Authored-By` trailers from now on (`.claude/settings.json` attribution empty, CLAUDE.md updated).
+- Checks: `pnpm check` ✅, e2e 5/5 ✅ (one assertion made tolerant of the fix finishing before the "Approved" note renders).

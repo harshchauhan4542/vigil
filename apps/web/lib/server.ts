@@ -137,7 +137,17 @@ async function buildCore(env: WebEnv, mode: VigilMode): Promise<Core> {
 
 /** Env validated for a specific mode (Live requires keys; Replay doesn't). */
 export function envFor(mode: VigilMode): WebEnv {
-  return loadWebEnv({ ...process.env, VIGIL_MODE: mode });
+  if (mode === 'live') return loadWebEnv({ ...process.env, VIGIL_MODE: mode });
+  // Replay serves the recorded world, which was recorded with the default (Claude) provider
+  // and model names. The model is part of each recording's key, so a Live model choice in
+  // .env (e.g. Groq's gpt-oss-120b) must not leak into Replay.
+  return loadWebEnv({
+    ...process.env,
+    VIGIL_MODE: mode,
+    LLM_PROVIDER: undefined,
+    VIGIL_MODEL_INTERACTIVE: undefined,
+    VIGIL_MODEL_BATCH: undefined,
+  });
 }
 
 /** The default mode from the environment, without validating the rest. */
