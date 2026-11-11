@@ -4,6 +4,13 @@ import { detectAll } from '@vigil/detectors';
 import {
   getAuthorizationMirror,
   knownAuthorizationIds,
+  knownCaptureIds,
+  knownSubscriptionIds,
+  listCapturesForDetection,
+  listSubscriptions,
+  seededCaptureOrders,
+  upsertCapture,
+  upsertSubscription,
   listAuthorizations,
   listLedgerBetween,
   listTransactionsBetween,
@@ -15,7 +22,7 @@ import {
   type Db,
 } from '@vigil/db';
 import { PayPalApiError, reads, type PayPalHttp } from '@vigil/paypal';
-import { authorizationRow, transactionRow } from './mappers.js';
+import { authorizationRow, captureRow, subscriptionRow, transactionRow } from './mappers.js';
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
@@ -34,7 +41,8 @@ export interface DetectOptions {
 
 export interface DetectSummary {
   authorizationsSynced: number;
-  transactionsSynced: number;
+  /** null = Transaction Search not available to this PayPal app; E4 was skipped. */
+  transactionsSynced: number | null;
   detected: number;
   created: string[];
   reopened: string[];
@@ -56,15 +64,64 @@ export async function syncAuthorizations(db: Db, http: PayPalHttp): Promise<numb
   return n;
 }
 
+const isNotFound = (error: unknown) => error instanceof PayPalApiError && error.status === 404;
+
+export async function syncSubscriptions(db: Db, http: PayPalHttp): Promise<number> {
+  let n = 0;
+  for (const id of await knownSubscriptionIds(db)) {
+    try {
+      await upsertSubscription(db, subscriptionRow(await reads.getSubscription(http, id)));
+      n++;
+    } catch (error) {
+      if (!isNotFound(error)) throw error;
+    }
+  }
+  return n;
+}
+
+/** Captures + whether their order already carries a tracker (Orders v2 shipping.trackers). */
+export async function syncCaptures(db: Db, http: PayPalHttp): Promise<number> {
+  const orders = await seededCaptureOrders(db);
+  let n = 0;
+  for (const id of await knownCaptureIds(db)) {
+    try {
+      const c = await reads.getCapture(http, id);
+      const orderId = c.supplementary_data?.related_ids?.order_id ?? orders.get(id) ?? null;
+      let hasTracker = false;
+      if (orderId) {
+        const order = await reads.getOrder(http, orderId);
+        hasTracker = (order.purchase_units ?? []).some((pu) =>
+          (pu.shipping?.trackers ?? []).some((t) => t.status !== 'CANCELLED'),
+        );
+      }
+      await upsertCapture(db, { ...captureRow(c, { hasTracker }), orderId });
+      n++;
+    } catch (error) {
+      if (!isNotFound(error)) throw error;
+    }
+  }
+  return n;
+}
+
+/**
+ * Transaction Search is an opt-in feature on PayPal apps (and lags up to 3 h). If the app isn't
+ * allowed to use it (401/403), return null so E4 is skipped instead of flagging every ledger row.
+ */
 export async function syncTransactions(
   db: Db,
   http: PayPalHttp,
   start: Date,
   end: Date,
-): Promise<number> {
+): Promise<number | null> {
   const rows = [];
-  for await (const detail of reads.searchTransactions(http, start, end))
-    rows.push(transactionRow(detail));
+  try {
+    for await (const detail of reads.searchTransactions(http, start, end))
+      rows.push(transactionRow(detail));
+  } catch (error) {
+    if (error instanceof PayPalApiError && (error.status === 401 || error.status === 403))
+      return null;
+    throw error;
+  }
   await upsertTransactions(db, rows);
   return rows.length;
 }
@@ -77,18 +134,21 @@ export async function detectExceptions(options: DetectOptions): Promise<DetectSu
   const ledgerEnd = new Date(now.getTime() - (options.lagHours ?? 3) * HOUR);
 
   const authorizationsSynced = await syncAuthorizations(db, http);
+  await syncSubscriptions(db, http);
+  await syncCaptures(db, http);
   const transactionsSynced = await syncTransactions(db, http, start, now);
 
   // Judge the books only inside the window, keeping the ±2-day tolerance away from its edges.
-  const ledger = await listLedgerBetween(
-    db,
-    isoDay(new Date(start.getTime() + 2 * DAY)),
-    isoDay(ledgerEnd),
-  );
+  const e4Enabled = transactionsSynced !== null;
+  const ledger = e4Enabled
+    ? await listLedgerBetween(db, isoDay(new Date(start.getTime() + 2 * DAY)), isoDay(ledgerEnd))
+    : [];
   const { exceptions, ledgerMatches } = detectAll({
     authorizations: await listAuthorizations(db),
-    transactions: await listTransactionsBetween(db, start, now),
+    transactions: e4Enabled ? await listTransactionsBetween(db, start, now) : [],
     ledger,
+    subscriptions: await listSubscriptions(db),
+    captures: await listCapturesForDetection(db),
     now,
   });
 

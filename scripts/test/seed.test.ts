@@ -171,3 +171,28 @@ describe('buildLedger', () => {
     expect(buildLedger(caps).map((r) => r.amountCents)).toEqual([2150, -124]);
   });
 });
+
+describe('card refused by the sandbox', () => {
+  it('falls back to buyer-approval links instead of failing', async () => {
+    const { http: mswHttp, HttpResponse } = await import('msw');
+    server.use(
+      mswHttp.post(`${BASE}/v2/checkout/orders`, async ({ request }) => {
+        const body = (await request.clone().json()) as { payment_source: { card?: unknown } };
+        if (body.payment_source.card) {
+          return HttpResponse.json(
+            {
+              name: 'UNPROCESSABLE_ENTITY',
+              details: [{ issue: 'PAYEE_NOT_ENABLED_FOR_CARD_PROCESSING' }],
+            },
+            { status: 422 },
+          );
+        }
+        return undefined; // fall through to the fake
+      }),
+    );
+    const lines: string[] = [];
+    const r = await runSeed({ http, db: handle.db, card, log: (l) => lines.push(l) });
+    expect(r.pending.map((p) => p.key)).toEqual(expect.arrayContaining(['auth:1', 'cap:1']));
+    expect(lines.some((l) => l.includes('card refused'))).toBe(true);
+  });
+});
