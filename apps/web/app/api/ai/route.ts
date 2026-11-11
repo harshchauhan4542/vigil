@@ -32,7 +32,12 @@ export async function POST(req: Request) {
   const stream = s.claude.messages.stream({
     model: s.env.VIGIL_MODEL_INTERACTIVE,
     max_tokens: 16000,
-    thinking: { type: 'adaptive' },
+    // Forced tool use (Studio's 'required' / named tool) is rejected while thinking is on.
+    thinking:
+      params.tool_choice &&
+      (params.tool_choice.type === 'any' || params.tool_choice.type === 'tool')
+        ? { type: 'disabled' }
+        : { type: 'adaptive' },
     output_config: { effort: 'low', ...(params.output_config ?? {}) },
     ...(params.system ? { system: params.system } : {}),
     messages: params.messages,

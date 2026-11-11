@@ -289,6 +289,7 @@ describe('/api/ai (Claude behind Studio built-in agents)', () => {
     expect(claude.requests[0]).toMatchObject({
       model: 'claude-sonnet-5',
       tool_choice: { type: 'any' },
+      thinking: { type: 'disabled' },
       system: 'Build dashboards',
     });
   });

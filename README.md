@@ -13,6 +13,7 @@ Vigil watches a merchant's PayPal account for money exceptions, such as authoriz
 
 - **Judge guide:** [below](#judge-guide)
 - **Architecture:** [below](#architecture) · [docs/architecture.md](docs/architecture.md)
+- **What you need to provide (accounts, keys, .env):** [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md)
 - **Negative testing (what is mocked and what is real):** [docs/negative-testing.md](docs/negative-testing.md)
 
 ## Why
@@ -130,7 +131,7 @@ AI models and services used **by the product**:
 - **Claude (Anthropic API, `@anthropic-ai/sdk`)**: `claude-sonnet-5` for the interactive agent (`/api/agent/stream`), `claude-opus-5-5` for batch triage of each new exception. Strict tool definitions, `tool_choice: auto`, adaptive thinking, prompt caching on a frozen system prompt. The agent only reads and drafts proposals.
 - **PayPal REST APIs (sandbox)**: Orders v2 (create, authorize, capture, track), Payments v2 (authorizations get/capture/reauthorize/void, captures get/refund, refunds get), Subscriptions v1 + Catalog Products v1 (seeding, reads), Transaction Search v1, Shipment Tracking v1 (reads), Invoicing v2 and Disputes v1 (reads), Webhooks v1 (`verify-webhook-signature`) plus self-verification of the signature.
 - **`@paypal/paypal-server-sdk` 2.5.0** (APIMatic-generated): configured to share Vigil's token cache; Vigil's own calls go through one raw HTTP client so logging, error mapping and replay sit in one place ([spike S1](docs/spikes.md)).
-- **`@paypal/agent-toolkit` 1.11.0**: read-only actions only, quarantined in one file, available to the agent in Live mode.
+- **`@paypal/agent-toolkit` 1.11.0**: wrapped as read-only Claude tools in one quarantined file (`packages/agent/src/toolkit-adapter.ts`, tested), but **not enabled** in the hosted agent: Vigil's own read tools cover the same data through the replayable client.
 - **AG Grid 36.2 (Community)** for the exception queue and audit log; **AG Studio 3.0** for analytics, with its built-in AI agents running on **Claude `claude-sonnet-5`** through Vigil's `/api/ai` adapter and a custom **Vigil Ops** agent (delegated to from Studio's lead agent) that streams Vigil's own Claude loop.
 - **Render**: web service, Workflows (durable execution), Postgres, Key Value, cron.
 
