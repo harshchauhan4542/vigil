@@ -3,9 +3,9 @@
 _Keep this file short. Claude updates it at the end of every session._
 
 **Last updated:** 2026-11-02
-**Current step:** Steps 0–15 coded (stacked PRs #1–#16, CI on each). P0 is complete in code and tests.
-**State:** Everything that needs no keys is done and green. Live checks (sandbox, Claude, webhooks), the Render deploy, fixtures recording, the video and the Devpost submission are waiting on you.
-**Next action:** You: merge PRs in order, add keys to `.env`, then follow docs/deploy.md. Me (when you say so): run the live checks for Steps 3–5, 9–11 and record Replay fixtures; then Step 16.
+**Current step:** All 21 steps (0–20) are coded; stacked PRs #1–#21 with CI (incl. Playwright e2e from Step 19).
+**State:** Everything that can be built and tested without your accounts is done and green, including a zero-key Replay demo (`pnpm demo`, currently synthetic data). Live checks, the deploy, real recordings, the video and the Devpost submission are waiting on you.
+**Next action:** You: merge PRs in order, add keys, follow docs/deploy.md and docs/final-checklist.md. Me (when asked): run the live checks (Steps 3–5, 9–11, 16, 18), record real fixtures, fix anything the sandbox surfaces.
 
 ## Blockers
 
@@ -74,3 +74,6 @@ Legend: ☐ not started · 🟡 in progress · ✅ done · ❌ blocked
 | 2026-11-02 | 15       | 🟡 README + Tools Statement, negative-testing, architecture, Devpost draft                            | [2026-11-02-step-15-submission.md](2026-11-02-step-15-submission.md)       |
 | 2026-11-02 | 16       | 🟡 E1 + E2 detectors, sync, agent tools, e2e tests                                                    | [2026-11-02-step-16-e1-e2.md](2026-11-02-step-16-e1-e2.md)                 |
 | 2026-11-02 | 17       | 🟡 W1, W2, W4, /audit, /judge, simulate-failure toggle                                                | [2026-11-02-step-17-widgets.md](2026-11-02-step-17-widgets.md)             |
+| 2026-11-02 | 18       | 🟡 Claude adapter for Studio agents, Vigil Ops agent, delegation harness                              | [2026-11-02-step-18-studio-agent.md](2026-11-02-step-18-studio-agent.md)   |
+| 2026-11-02 | 19       | ✅ Zero-key Replay world, Playwright e2e in CI, pnpm demo, security scan, Postman                     | [2026-11-02-step-19-hardening.md](2026-11-02-step-19-hardening.md)         |
+| 2026-11-02 | 20       | 🟡 Final README, Devpost draft, final + keep-alive checklist                                          | [2026-11-02-step-20-final.md](2026-11-02-step-20-final.md)                 |

@@ -56,6 +56,7 @@ beforeEach(async () => {
     claude: null,
     store: new MemoryFixtureStore(),
     policy: POLICY_V1,
+    now: () => new Date(),
   };
   server = assemble(env, 'live', core, createInlineRunner(core, env, 'live', true));
   setServerForTests(server);
@@ -234,5 +235,62 @@ describe('step 17 routes', () => {
     );
     expect(res.status).toBe(422);
     expect((await res.json()).error).toBe('mock_not_supported');
+  });
+});
+
+describe('/api/ai (Claude behind Studio built-in agents)', () => {
+  it('translates an AgLlmRequest, calls Claude with strict-free tools, returns an AgLlmResponse', async () => {
+    const { FakeClaude } = await import('@vigil/agent/testing');
+    const { createClaudeClient } = await import('@vigil/agent');
+    const { POST: ai } = await import('../app/api/ai/route');
+    const claude = new FakeClaude(() => ({
+      content: [{ type: 'tool_use', name: 'studio_addWidget', input: { type: 'bar' } }],
+    }));
+    msw.use(claude.handler());
+    setServerForTests({
+      ...server,
+      claude: createClaudeClient({
+        mode: 'live',
+        apiKey: 'fake-anthropic-test',
+        store: new MemoryFixtureStore(),
+      }),
+    });
+    const res = await ai(
+      post('/api/ai', {
+        instructions: 'Build dashboards',
+        responseFormat: { type: 'text' },
+        toolChoice: 'required',
+        tools: [
+          {
+            name: 'studio_addWidget',
+            description: 'Add',
+            parameters: { type: 'object', properties: {} },
+          },
+        ],
+        input: [
+          {
+            id: 'u',
+            kind: 'input',
+            type: 'message',
+            role: 'user',
+            status: 'completed',
+            content: [{ type: 'text', text: 'Chart it' }],
+          },
+        ],
+      }),
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.output[0]).toMatchObject({
+      type: 'function_call',
+      name: 'studio_addWidget',
+      arguments: '{"type":"bar"}',
+    });
+    expect(claude.requests[0]).toMatchObject({
+      model: 'claude-sonnet-5',
+      tool_choice: { type: 'any' },
+      thinking: { type: 'disabled' },
+      system: 'Build dashboards',
+    });
   });
 });

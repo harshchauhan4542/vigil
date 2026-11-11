@@ -1,0 +1,23 @@
+{
+  "key": "861e3ae2dedff01994987d6572e5c627895cbf30c0248c5867d21d6025200413",
+  "kind": "paypal",
+  "request": {
+    "method": "POST",
+    "url": "/v2/payments/authorizations/AUTH-129/capture",
+    "body": {
+      "amount": {
+        "currency_code": "USD",
+        "value": "129.00"
+      },
+      "final_capture": true
+    }
+  },
+  "response": {
+    "status": 422,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": "{\"name\":\"UNPROCESSABLE_ENTITY\",\"debug_id\":\"dbg-422\",\"details\":[{\"issue\":\"AUTHORIZATION_EXPIRED\"}]}"
+  },
+  "recordedAt": "2026-11-02T09:01:37.493Z"
+}

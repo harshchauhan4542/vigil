@@ -1,0 +1,17 @@
+{
+  "key": "1004c0b5e35eda2f7900bf86c6a41bab2012d286b7d2b8fbe486741863c0172d",
+  "kind": "paypal",
+  "request": {
+    "method": "GET",
+    "url": "/v2/payments/captures/CAP-89",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": "{\"id\":\"CAP-89\",\"status\":\"COMPLETED\",\"amount\":{\"currency_code\":\"USD\",\"value\":\"89.00\"},\"create_time\":\"2026-11-04T06:00:00.000Z\",\"supplementary_data\":{\"related_ids\":{\"order_id\":\"ORD-89\"}}}"
+  },
+  "recordedAt": "2026-11-02T09:01:36.526Z"
+}
