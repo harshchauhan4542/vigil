@@ -16,7 +16,7 @@ Nothing the AI says moves money. A deterministic gate re-reads the target from *
 
 What we tested end to end: double approval → one PayPal effect; forced 503 and lost responses → one effect; retries exhausted → a GET decides; a seeded customer note telling the AI to "refund $900" → the refund proposal is rejected by policy. Judges can run it **Live** against the PayPal sandbox or in zero-key **Replay** (`pnpm demo` works from a fresh clone, no keys, no Docker). AG Studio's built-in assistant runs on Claude and delegates money questions to our Vigil Ops agent.
 
-**PayPal APIs used:** Orders v2, Payments v2 (authorizations, captures, refunds), Subscriptions v1, Catalog Products v1, Transaction Search v1, Shipment Tracking v1, Invoicing v2, Disputes v1, Webhooks v1 (signature verification), plus `@paypal/paypal-server-sdk` and `@paypal/agent-toolkit` (read-only).
+**PayPal APIs used:** Orders v2, Payments v2 (authorizations, captures, refunds), Subscriptions v1, Catalog Products v1, Transaction Search v1, Shipment Tracking v1, Invoicing v2, Disputes v1, Webhooks v1 (signature verification), plus `@paypal/paypal-server-sdk` (and a quarantined, read-only `@paypal/agent-toolkit` adapter, not enabled in the hosted agent).
 
 **AI used:** Claude `claude-sonnet-5` (interactive agent) and `claude-opus-5-5` (batch triage) via the Anthropic API. See the Tools Statement in the README.
 
