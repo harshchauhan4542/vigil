@@ -283,3 +283,34 @@ describe('keys and stores', () => {
     );
   });
 });
+
+describe('llm replay with different row ids', () => {
+  it('matches a conversation whose UUIDs changed and maps them back into the reply', async () => {
+    const A = '0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b';
+    const B = '0190ffff-eeee-7ddd-8ccc-bbbbaaaa9999';
+    server.use(
+      http.post('https://api.anthropic.com/v1/messages', () =>
+        HttpResponse.json({
+          content: [{ type: 'tool_use', name: 'get_exception', input: { exception_id: A } }],
+        }),
+      ),
+    );
+    const store = new MemoryFixtureStore();
+    const body = (id: string) =>
+      JSON.stringify({
+        model: 'claude-opus-5-5',
+        messages: [{ role: 'user', content: `Triage exception ${id}` }],
+      });
+    await createReplayFetch({ mode: 'live', kind: 'llm', store, record: true })(
+      'https://api.anthropic.com/v1/messages',
+      { method: 'POST', body: body(A) },
+    );
+    server.resetHandlers();
+    expect(llmKey(body(A))).toBe(llmKey(body(B)));
+    const res = await createReplayFetch({ mode: 'replay', kind: 'llm', store })(
+      'https://api.anthropic.com/v1/messages',
+      { method: 'POST', body: body(B) },
+    );
+    expect(await res.text()).toContain(B);
+  });
+});

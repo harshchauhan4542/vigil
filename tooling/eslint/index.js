@@ -23,6 +23,13 @@ const SANDBOX_SETUP = {
     'Trust boundary: sandbox data creation is only for scripts/ and the apps/workflows reseed task.',
 };
 
+/** zod 3 / openai / old server-sdk: quarantined in packages/agent/src/toolkit-adapter.ts. */
+const AGENT_TOOLKIT = {
+  group: ['@paypal/agent-toolkit', '@paypal/agent-toolkit/*'],
+  message:
+    'Quarantine: only packages/agent/src/toolkit-adapter.ts may import @paypal/agent-toolkit.',
+};
+
 const LLM_SDK = {
   group: ['@anthropic-ai/sdk', '@anthropic-ai/sdk/*', '@vigil/agent', '@vigil/agent/*'],
   message: 'Trust boundary: this module must never import the LLM SDK or the agent.',
@@ -80,7 +87,7 @@ export const boundaryRules = [
   // Default for every file: nobody imports the money-moving actions or sandbox setup.
   {
     files: ['**/*.{ts,tsx,js,mjs,cjs}'],
-    rules: { 'no-restricted-imports': restrict(PAYPAL_ACTIONS, SANDBOX_SETUP) },
+    rules: { 'no-restricted-imports': restrict(PAYPAL_ACTIONS, SANDBOX_SETUP, AGENT_TOOLKIT) },
   },
   // Pure packages: core and detectors.
   {
@@ -92,6 +99,7 @@ export const boundaryRules = [
         LLM_SDK,
         POLICY_MINT,
         IO_MODULES,
+        AGENT_TOOLKIT,
       ),
     },
   },
@@ -105,34 +113,42 @@ export const boundaryRules = [
         LLM_SDK,
         IO_MODULES,
         PAYPAL_ANY,
+        AGENT_TOOLKIT,
       ),
     },
   },
   // Agent (Tier 1): proposes only. No actions, no policy minting.
   {
     files: ['packages/agent/**'],
-    rules: { 'no-restricted-imports': restrict(PAYPAL_ACTIONS, SANDBOX_SETUP, POLICY_MINT) },
+    rules: {
+      'no-restricted-imports': restrict(PAYPAL_ACTIONS, SANDBOX_SETUP, POLICY_MINT, AGENT_TOOLKIT),
+    },
   },
   // PayPal package: holds credentials, never talks to the agent or LLM.
   // Inside the package, relative imports of ./actions are allowed (index.ts must not re-export it).
   {
     files: ['packages/paypal/**'],
-    rules: { 'no-restricted-imports': restrict(LLM_SDK) },
+    rules: { 'no-restricted-imports': restrict(LLM_SDK, AGENT_TOOLKIT) },
   },
   // Workflows (Tier 3) may import actions.
   {
     files: ['apps/workflows/**'],
-    rules: { 'no-restricted-imports': 'off' },
+    rules: { 'no-restricted-imports': restrict(AGENT_TOOLKIT) },
   },
   // ...but the execute task must never touch the LLM.
   {
     files: ['apps/workflows/src/tasks/execute-proposal.ts'],
-    rules: { 'no-restricted-imports': restrict(LLM_SDK) },
+    rules: { 'no-restricted-imports': restrict(LLM_SDK, AGENT_TOOLKIT) },
+  },
+  // The single quarantined file for the PayPal agent toolkit.
+  {
+    files: ['packages/agent/src/toolkit-adapter.ts'],
+    rules: { 'no-restricted-imports': restrict(PAYPAL_ACTIONS, SANDBOX_SETUP, POLICY_MINT) },
   },
   // Seed / ops scripts may create sandbox data, but never move money for an exception fix.
   {
     files: ['scripts/**'],
-    rules: { 'no-restricted-imports': restrict(PAYPAL_ACTIONS, LLM_SDK) },
+    rules: { 'no-restricted-imports': restrict(PAYPAL_ACTIONS, LLM_SDK, AGENT_TOOLKIT) },
   },
 ];
 
