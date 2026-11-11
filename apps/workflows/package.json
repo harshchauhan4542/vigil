@@ -4,24 +4,46 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc --noEmit && node build.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "flow": "node --env-file-if-exists=../../.env --import tsx src/cli.ts",
+    "start:worker": "node dist/worker.js",
+    "start:cron": "node dist/cron.js",
+    "demo:build": "node --import tsx src/demo/build-demo.ts"
   },
   "dependencies": {
+    "@electric-sql/pglite": "0.5.14",
+    "@renderinc/sdk": "1.6.0",
+    "@vigil/agent": "workspace:*",
     "@vigil/config": "workspace:*",
     "@vigil/core": "workspace:*",
     "@vigil/db": "workspace:*",
     "@vigil/detectors": "workspace:*",
-    "@vigil/paypal": "workspace:*"
+    "@vigil/gate": "workspace:*",
+    "@vigil/paypal": "workspace:*",
+    "@vigil/policy": "workspace:*",
+    "@vigil/replay": "workspace:*",
+    "@vigil/scripts": "workspace:*",
+    "@vigil/tasks": "workspace:*",
+    "ioredis": "6.0.0",
+    "msw": "3.0.3",
+    "pg": "8.23.1",
+    "pino": "10.4.0",
+    "uuid": "14.0.3"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
     "@vigil/tsconfig": "workspace:*",
     "drizzle-orm": "0.45.4",
-    "msw": "3.0.3",
+    "esbuild": "0.28.2",
+    "tsx": "4.23.15",
     "typescript": "5.9.3",
     "vitest": "5.0.5"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing/fake-paypal.ts"
   }
 }

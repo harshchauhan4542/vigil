@@ -226,7 +226,7 @@ describe('scrubbing', () => {
     });
     const res = await f('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'x-api-key': 'sk-ant-should-not-be-stored' },
+      headers: { 'x-api-key': 'fake-anthropic-key-should-not-be-stored' },
       body: JSON.stringify({
         model: 'claude-sonnet-5',
         messages: [{ role: 'user', content: 'hi' }],
@@ -235,7 +235,7 @@ describe('scrubbing', () => {
     expect(await res.text()).toContain(SECRET); // the live caller still sees the real body
     const saved = JSON.stringify([...store.recordings.values()]);
     expect(saved).not.toContain(SECRET);
-    expect(saved).not.toContain('sk-ant-should-not-be-stored');
+    expect(saved).not.toContain('fake-anthropic-key-should-not-be-stored');
     expect(saved).toContain('message_start');
   });
 });
@@ -312,5 +312,33 @@ describe('llm replay with different row ids', () => {
       { method: 'POST', body: body(B) },
     );
     expect(await res.text()).toContain(B);
+  });
+});
+
+describe('step 19 key rules', () => {
+  it('ignores time-window params and separates mocked calls', () => {
+    const a = paypalKey(
+      'GET',
+      new URL(
+        `${BASE}/v1/reporting/transactions?start_date=2026-01-01&end_date=2026-01-02&fields=all`,
+      ),
+      '',
+    );
+    const b = paypalKey(
+      'GET',
+      new URL(
+        `${BASE}/v1/reporting/transactions?fields=all&start_date=2027-05-05&end_date=2027-05-06`,
+      ),
+      '',
+    );
+    expect(a).toBe(b);
+    const real = paypalKey('POST', new URL(`${BASE}/v2/payments/authorizations/A/capture`), '{}');
+    const mocked = paypalKey(
+      'POST',
+      new URL(`${BASE}/v2/payments/authorizations/A/capture`),
+      '{}',
+      '{"mock_application_codes":"AUTHORIZATION_EXPIRED"}',
+    );
+    expect(real).not.toBe(mocked);
   });
 });

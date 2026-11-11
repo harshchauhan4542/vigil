@@ -2,9 +2,10 @@ import { createTestDb, type DbHandle } from '@vigil/db';
 import { MemoryCache, createPayPalClient, type PayPalHttp } from '@vigil/paypal';
 import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest';
-import { BASE, FakePayPal } from './fake-paypal.js';
+import { BASE, FakePayPal } from '../src/testing/fake-paypal.js';
 
 export interface TestEnv {
+  server: ReturnType<typeof setupServer>;
   fake: FakePayPal;
   handle: DbHandle;
   http: PayPalHttp;
@@ -13,7 +14,7 @@ export interface TestEnv {
 /** Fresh PGlite + fake PayPal per test. */
 export function useTestEnv(): TestEnv {
   const server = setupServer();
-  const env = {} as TestEnv;
+  const env = { server } as TestEnv;
   beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
   afterAll(() => server.close());
   beforeEach(async () => {

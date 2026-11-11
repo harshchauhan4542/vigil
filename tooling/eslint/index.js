@@ -23,6 +23,13 @@ const SANDBOX_SETUP = {
     'Trust boundary: sandbox data creation is only for scripts/ and the apps/workflows reseed task.',
 };
 
+/** The workflows app contains the execution code; the web app loads it only for inline/replay runs. */
+const WORKFLOWS_APP = {
+  group: ['@vigil/workflows', '@vigil/workflows/*'],
+  message:
+    'Trust boundary: only apps/web/lib/inline-runner.ts may load @vigil/workflows (local/replay in-process runner).',
+};
+
 /** zod 3 / openai / old server-sdk: quarantined in packages/agent/src/toolkit-adapter.ts. */
 const AGENT_TOOLKIT = {
   group: ['@paypal/agent-toolkit', '@paypal/agent-toolkit/*'],
@@ -117,6 +124,13 @@ export const boundaryRules = [
       ),
     },
   },
+  // Gate (Tier 2): policy + approval. Never the LLM, never the money-moving actions.
+  {
+    files: ['packages/gate/**'],
+    rules: {
+      'no-restricted-imports': restrict(PAYPAL_ACTIONS, SANDBOX_SETUP, LLM_SDK, AGENT_TOOLKIT),
+    },
+  },
   // Agent (Tier 1): proposes only. No actions, no policy minting.
   {
     files: ['packages/agent/**'],
@@ -140,6 +154,32 @@ export const boundaryRules = [
     files: ['apps/workflows/src/tasks/execute-proposal.ts'],
     rules: { 'no-restricted-imports': restrict(LLM_SDK, AGENT_TOOLKIT) },
   },
+  // Web app (Tier 2): never the actions, never the workflows code (except the inline runner).
+  {
+    files: ['apps/web/**'],
+    rules: {
+      'no-restricted-imports': restrict(
+        PAYPAL_ACTIONS,
+        SANDBOX_SETUP,
+        AGENT_TOOLKIT,
+        WORKFLOWS_APP,
+      ),
+    },
+  },
+  // Web tests may use the fake PayPal from @vigil/workflows/testing (no execution code).
+  {
+    files: ['apps/web/test/**'],
+    rules: {
+      'no-restricted-imports': restrict(PAYPAL_ACTIONS, SANDBOX_SETUP, AGENT_TOOLKIT, {
+        regex: '^@vigil/workflows$',
+        message: WORKFLOWS_APP.message,
+      }),
+    },
+  },
+  {
+    files: ['apps/web/lib/inline-runner.ts'],
+    rules: { 'no-restricted-imports': restrict(PAYPAL_ACTIONS, SANDBOX_SETUP, AGENT_TOOLKIT) },
+  },
   // The single quarantined file for the PayPal agent toolkit.
   {
     files: ['packages/agent/src/toolkit-adapter.ts'],
@@ -158,6 +198,9 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/dist/**',
       '**/.next/**',
+      '**/.next-*/**',
+      '**/.data/**',
+      '**/next-env.d.ts',
       '**/.turbo/**',
       '**/coverage/**',
       '**/next-env.d.ts',
