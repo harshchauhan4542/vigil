@@ -129,7 +129,7 @@ function agent(fakeOrStore: {
   if (fakeOrStore.claude) server.use(fakeOrStore.claude.handler());
   const client = createClaudeClient({
     mode: fakeOrStore.mode ?? 'live',
-    apiKey: 'sk-ant-test-key-1234567890',
+    apiKey: 'fake-anthropic-test-key-1234567890',
     store: fakeOrStore.store ?? new MemoryFixtureStore(),
     record: fakeOrStore.record ?? false,
   });
@@ -294,7 +294,7 @@ describe('replay mode', () => {
     await triageException(agent({ claude, store, record: true }).options, ex1.id);
     expect(store.recordings.size).toBe(4);
     expect(JSON.stringify([...store.recordings.values()])).not.toContain(
-      'sk-ant-test-key-1234567890',
+      'fake-anthropic-test-key-1234567890',
     );
 
     // Fresh database, new UUIDs, Claude network gone (PayPal still served by MSW).

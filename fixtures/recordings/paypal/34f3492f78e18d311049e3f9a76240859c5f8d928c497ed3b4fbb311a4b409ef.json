@@ -1,0 +1,24 @@
+{
+  "key": "34f3492f78e18d311049e3f9a76240859c5f8d928c497ed3b4fbb311a4b409ef",
+  "kind": "paypal",
+  "request": {
+    "method": "POST",
+    "url": "/v1/billing/subscriptions/I-BEANS/capture",
+    "body": {
+      "note": "Retry after card update",
+      "capture_type": "OUTSTANDING_BALANCE",
+      "amount": {
+        "currency_code": "USD",
+        "value": "24.00"
+      }
+    }
+  },
+  "response": {
+    "status": 202,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": "{\"id\":\"TXN-103\",\"status\":\"COMPLETED\",\"amount_with_breakdown\":{\"gross_amount\":{\"currency_code\":\"USD\",\"value\":\"24.00\"}}}"
+  },
+  "recordedAt": "2026-11-02T09:01:37.699Z"
+}

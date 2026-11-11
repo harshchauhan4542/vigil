@@ -10,6 +10,7 @@ export async function GET(req: Request) {
     return json({
       ok: true,
       mode: s.mode,
+      fallback: s.fallback ?? null,
       ai: !!s.claude,
       execution_enabled: s.env.EXECUTION_ENABLED,
       audit_seq: await latestAuditSeq(s.db),
