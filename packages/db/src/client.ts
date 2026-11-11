@@ -1,6 +1,7 @@
 // Driver switch: PGlite (embedded Postgres) locally and in tests, node-postgres on Render.
 // A postgres:// DATABASE_URL selects `pg`; anything else uses PGlite.
 import { mkdirSync } from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { ExtractTablesWithRelations, SQL } from 'drizzle-orm';
 import type { PgDatabase, PgQueryResultHKT, PgTransaction } from 'drizzle-orm/pg-core';
@@ -12,7 +13,12 @@ export type Tx = PgTransaction<PgQueryResultHKT, Schema, ExtractTablesWithRelati
 /** Anything that can run queries: the database or an open transaction. */
 export type Executor = Db | Tx;
 
-export const MIGRATIONS_DIR = fileURLToPath(new URL('../migrations', import.meta.url));
+/** Default: next to this package's sources. Bundlers (Next.js) pass `migrationsDir` explicitly. */
+export const MIGRATIONS_DIR = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..',
+  'migrations',
+);
 
 export interface DbHandle {
   db: Db;
@@ -26,6 +32,8 @@ export interface CreateDbOptions {
   databaseUrl?: string | undefined;
   /** PGlite data directory, or 'memory://' (default when omitted). */
   pgliteDir?: string | undefined;
+  /** Where the SQL migrations live (defaults to MIGRATIONS_DIR). */
+  migrationsDir?: string | undefined;
 }
 
 const isPostgresUrl = (url: string | undefined): url is string =>
@@ -41,7 +49,7 @@ export async function createDb(options: CreateDbOptions = {}): Promise<DbHandle>
     return {
       db: db as unknown as Db,
       driver: 'pg',
-      migrate: () => migrate(db, { migrationsFolder: MIGRATIONS_DIR }),
+      migrate: () => migrate(db, { migrationsFolder: options.migrationsDir ?? MIGRATIONS_DIR }),
       close: () => pool.end(),
     };
   }
@@ -56,7 +64,7 @@ export async function createDb(options: CreateDbOptions = {}): Promise<DbHandle>
   return {
     db: db as unknown as Db,
     driver: 'pglite',
-    migrate: () => migrate(db, { migrationsFolder: MIGRATIONS_DIR }),
+    migrate: () => migrate(db, { migrationsFolder: options.migrationsDir ?? MIGRATIONS_DIR }),
     close: () => client.close(),
   };
 }

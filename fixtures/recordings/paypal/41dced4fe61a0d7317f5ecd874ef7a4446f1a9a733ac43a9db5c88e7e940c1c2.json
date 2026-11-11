@@ -1,0 +1,17 @@
+{
+  "key": "41dced4fe61a0d7317f5ecd874ef7a4446f1a9a733ac43a9db5c88e7e940c1c2",
+  "kind": "paypal",
+  "request": {
+    "method": "GET",
+    "url": "/v2/checkout/orders/ORD-89",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": "{\"id\":\"ORD-89\",\"intent\":\"CAPTURE\",\"status\":\"COMPLETED\",\"purchase_units\":[{\"reference_id\":\"default\",\"amount\":{\"currency_code\":\"USD\",\"value\":\"89.00\"},\"payments\":{\"captures\":[{\"id\":\"CAP-89\",\"status\":\"COMPLETED\",\"amount\":{\"currency_code\":\"USD\",\"value\":\"89.00\"}}]},\"shipping\":{\"trackers\":[]}}]}"
+  },
+  "recordedAt": "2026-11-02T09:01:37.064Z"
+}
