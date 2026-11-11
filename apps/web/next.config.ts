@@ -3,7 +3,7 @@ import type { NextConfig } from 'next';
 const SERVER_EXTERNALS = ['@electric-sql/pglite', 'pg', 'ioredis', 'pino', '@renderinc/sdk', 'msw'];
 
 const config: NextConfig = {
-  output: 'standalone',
+  // Render runs `next start` in the built checkout (no standalone copy step needed).
   // Lets a second build run while another `next start` holds .next (local verification only).
   ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   // Workspace packages ship TypeScript sources.

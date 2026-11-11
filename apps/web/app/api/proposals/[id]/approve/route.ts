@@ -12,6 +12,7 @@ const STATUS: Record<string, number> = {
   expired: 409,
   policy_failed: 409,
   typed_amount_required: 422,
+  mock_not_supported: 422,
 };
 
 export async function POST(req: Request, { params }: IdParams) {
@@ -21,12 +22,16 @@ export async function POST(req: Request, { params }: IdParams) {
   if (limited) return limited;
   const s = await serverFor(req);
   const session = ensureSession(req, s.env.SESSION_SECRET!);
-  const body = (await req.json().catch(() => ({}))) as { typed_amount?: string };
+  const body = (await req.json().catch(() => ({}))) as {
+    typed_amount?: string;
+    mock_code?: string;
+  };
   const result = await serialized(`approve:${id}`, () =>
     approveProposal(s.gate, {
       proposalId: id,
       approver: session.id,
       typedAmount: body.typed_amount ?? null,
+      mockCode: body.mock_code ?? null,
     }),
   );
   const headers: Record<string, string> = session.setCookie
