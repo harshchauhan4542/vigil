@@ -1,0 +1,17 @@
+{
+  "key": "57bcce9f3422c22138b419320d518301fa7266b631ff0716b3c10c45679a2960",
+  "kind": "paypal",
+  "request": {
+    "method": "GET",
+    "url": "/v2/payments/captures/CAP-2004",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": "{\"id\":\"CAP-2004\",\"status\":\"COMPLETED\",\"amount\":{\"currency_code\":\"USD\",\"value\":\"21.50\"}}"
+  },
+  "recordedAt": "2026-11-02T09:01:37.258Z"
+}
