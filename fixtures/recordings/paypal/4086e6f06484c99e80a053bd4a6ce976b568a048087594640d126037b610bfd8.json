@@ -1,0 +1,17 @@
+{
+  "key": "4086e6f06484c99e80a053bd4a6ce976b568a048087594640d126037b610bfd8",
+  "kind": "paypal",
+  "request": {
+    "method": "GET",
+    "url": "/v2/payments/captures/CAP-102",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": "{\"id\":\"CAP-102\",\"status\":\"COMPLETED\",\"amount\":{\"currency_code\":\"USD\",\"value\":\"612.00\"},\"final_capture\":true,\"supplementary_data\":{\"related_ids\":{\"authorization_id\":\"AUTH-612\"}}}"
+  },
+  "recordedAt": "2026-11-02T09:01:37.791Z"
+}

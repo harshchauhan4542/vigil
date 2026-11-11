@@ -1,0 +1,17 @@
+{
+  "key": "9a48756deed6f4816bb26339cc37b43ee3f8707f770c74b79383b482596084f8",
+  "kind": "paypal",
+  "request": {
+    "method": "GET",
+    "url": "/v2/payments/authorizations/AUTH-129",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": "{\"id\":\"AUTH-129\",\"status\":\"CREATED\",\"amount\":{\"currency_code\":\"USD\",\"value\":\"129.00\"},\"create_time\":\"2026-11-02T22:00:00.000Z\",\"expiration_time\":\"2026-12-01T22:00:00.000Z\",\"supplementary_data\":{\"related_ids\":{\"order_id\":\"ORDER-AUTH-129\"}}}"
+  },
+  "recordedAt": "2026-11-02T09:01:36.866Z"
+}

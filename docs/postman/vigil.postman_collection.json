@@ -1,0 +1,268 @@
+{
+  "info": {
+    "name": "Vigil API",
+    "description": "Vigil's HTTP API (PayPal AI Hackathon). Set baseUrl to the hosted URL or http://localhost:3000. Approve/reject set a signed session cookie; Postman keeps it automatically.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "proposalId",
+      "value": ""
+    },
+    {
+      "key": "exceptionId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "health"]
+        },
+        "description": "Mode (live/replay), fallback reason, AI availability, audit head."
+      }
+    },
+    {
+      "name": "Switch to Replay",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/demo/mode",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "demo", "mode"]
+        },
+        "description": "Per-session cookie. Use \"live\" for the real PayPal sandbox.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"mode\": \"replay\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Exception queue",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/exceptions",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "exceptions"]
+        },
+        "description": "Exceptions by money at risk \u00d7 urgency, each with its latest proposal."
+      }
+    },
+    {
+      "name": "Money stats (W1)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/stats",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "stats"]
+        },
+        "description": ""
+      }
+    },
+    {
+      "name": "Proposal detail",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/proposals/{{proposalId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "proposals", "{{proposalId}}"]
+        },
+        "description": "Params, policy checklist (R1\u2013R10), rationale, evidence, executions (PayPal-Request-Id, debug_id)."
+      }
+    },
+    {
+      "name": "Approve",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/proposals/{{proposalId}}/approve",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "proposals", "{{proposalId}}", "approve"]
+        },
+        "description": "Re-runs policy on fresh PayPal state, mints a single-use token, starts execute_proposal. 409 if stale/duplicate.",
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      }
+    },
+    {
+      "name": "Approve T3 (typed amount)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/proposals/{{proposalId}}/approve",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "proposals", "{{proposalId}}", "approve"]
+        },
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"typed_amount\": \"612.00\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Approve with simulated failure",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/proposals/{{proposalId}}/approve",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "proposals", "{{proposalId}}", "approve"]
+        },
+        "description": "PayPal-Mock-Response; capture/void/refund only (422 mock_not_supported otherwise).",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"mock_code\": \"AUTHORIZATION_EXPIRED\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Reject",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/proposals/{{proposalId}}/reject",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "proposals", "{{proposalId}}", "reject"]
+        },
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reason\": \"Not shipping yet\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Settlement trail (W4)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/exceptions/{{exceptionId}}/trail",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "exceptions", "{{exceptionId}}", "trail"]
+        },
+        "description": ""
+      }
+    },
+    {
+      "name": "Audit log + chain check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/audit",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "audit"]
+        },
+        "description": ""
+      }
+    },
+    {
+      "name": "Agent (SSE)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/agent/stream",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "agent", "stream"]
+        },
+        "description": "Server-sent events: tool calls, text, proposals with policy verdicts.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"message\": \"Which exceptions need attention first?\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Live updates (SSE)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/events",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "events"]
+        },
+        "description": ""
+      }
+    },
+    {
+      "name": "Reset demo data (Live)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/demo/reset",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "demo", "reset"]
+        },
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      }
+    }
+  ]
+}
