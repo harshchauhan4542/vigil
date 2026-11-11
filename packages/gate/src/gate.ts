@@ -22,7 +22,7 @@ import {
   type Actor,
   type Db,
 } from '@vigil/db';
-import type { PayPalHttp } from '@vigil/paypal';
+import { MOCK_CODES, type MockCode, type PayPalHttp } from '@vigil/paypal';
 import {
   POLICY_V1,
   checkTypedAmount,
@@ -132,7 +132,13 @@ export type ApproveResult =
   | { ok: true; status: 'QUEUED'; runId: string; policy: PolicyResult }
   | {
       ok: false;
-      code: 'not_found' | 'not_pending' | 'expired' | 'policy_failed' | 'typed_amount_required';
+      code:
+        | 'not_found'
+        | 'not_pending'
+        | 'expired'
+        | 'policy_failed'
+        | 'typed_amount_required'
+        | 'mock_not_supported';
       status?: string;
       policy?: PolicyResult;
     };
@@ -142,7 +148,16 @@ export interface ApproveInput {
   approver: string;
   /** T3 only: the amount typed by the approver, e.g. "612.00". */
   typedAmount?: string | null;
+  /** Negative test: PayPal-Mock-Response code (Orders v2 / Payments v2 actions only). */
+  mockCode?: string | null;
 }
+
+/** Actions whose PayPal call accepts PayPal-Mock-Response (see paypal/mock-response.ts). */
+export const MOCKABLE_ACTIONS: ReadonlySet<string> = new Set([
+  'capture_authorization',
+  'void_authorization',
+  'refund',
+]);
 
 /**
  * Human approval. Re-runs policy on fresh PayPal state, checks T3 typed confirmation, records
@@ -156,6 +171,16 @@ export async function approveProposal(deps: GateDeps, input: ApproveInput): Prom
   const p = await getProposal(deps.db, input.proposalId);
   if (!p) return { ok: false, code: 'not_found' };
   if (p.status !== 'PENDING_APPROVAL') return { ok: false, code: 'not_pending', status: p.status };
+  let mock: MockCode | undefined;
+  if (input.mockCode) {
+    if (
+      !MOCKABLE_ACTIONS.has(p.actionType) ||
+      !(MOCK_CODES as readonly string[]).includes(input.mockCode)
+    ) {
+      return { ok: false, code: 'mock_not_supported' };
+    }
+    mock = input.mockCode as MockCode;
+  }
 
   if (p.expiresAt && p.expiresAt <= now) {
     await transitionProposal(deps.db, p.id, 'PENDING_APPROVAL', 'EXPIRED', {
@@ -228,7 +253,10 @@ export async function approveProposal(deps: GateDeps, input: ApproveInput): Prom
     riskTier: r.result.tier,
   });
   await transitionProposal(deps.db, p.id, 'APPROVED', 'QUEUED', { type: 'system', id: 'gate' });
-  const run = await deps.runner.start('execute_proposal', [p.id, token]);
+  const run = await deps.runner.start(
+    'execute_proposal',
+    mock ? [p.id, token, { mock }] : [p.id, token],
+  );
   return { ok: true, status: 'QUEUED', runId: run.runId, policy: r.result };
 }
 

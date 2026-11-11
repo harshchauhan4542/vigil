@@ -31,19 +31,29 @@ function parseBody(text: string): unknown {
 }
 
 /** Path plus query with sorted parameters, so key order in a URL never changes the hash. */
+/** Time-window query params change with the clock but not the meaning of a recorded call. */
+const VOLATILE_PARAMS = new Set(['start_date', 'end_date', 'start_time', 'end_time']);
+
 export function normalizedPath(url: URL): string {
-  const params = [...url.searchParams.entries()].sort(([a, av], [b, bv]) =>
-    a === b ? (av < bv ? -1 : 1) : a < b ? -1 : 1,
-  );
+  const params = [...url.searchParams.entries()]
+    .filter(([k]) => !VOLATILE_PARAMS.has(k))
+    .sort(([a, av], [b, bv]) => (a === b ? (av < bv ? -1 : 1) : a < b ? -1 : 1));
   const q = new URLSearchParams(params).toString();
   return q ? `${url.pathname}?${q}` : url.pathname;
 }
 
 /** PayPal: sha256(method + path + canonical body). Auth and request-id headers are excluded. */
-export function paypalKey(method: string, url: URL, bodyText: string): string {
+export function paypalKey(
+  method: string,
+  url: URL,
+  bodyText: string,
+  mockHeader?: string | null,
+): string {
   const body = parseBody(bodyText);
+  // A negative test (PayPal-Mock-Response) is a different recording from the real call.
+  const mock = mockHeader ? `mock:${mockHeader}|` : '';
   return sha256Hex(
-    `${method.toUpperCase()} ${normalizedPath(url)}\n${typeof body === 'string' ? body : canonicalJson(body)}`,
+    `${mock}${method.toUpperCase()} ${normalizedPath(url)}\n${typeof body === 'string' ? body : canonicalJson(body)}`,
   );
 }
 
@@ -130,7 +140,9 @@ export function createReplayFetch(options: ReplayFetchOptions): typeof fetch {
     }
 
     const base =
-      options.kind === 'paypal' ? paypalKey(request.method, url, bodyText) : llmKey(bodyText);
+      options.kind === 'paypal'
+        ? paypalKey(request.method, url, bodyText, request.headers.get('paypal-mock-response'))
+        : llmKey(bodyText);
     const n = occurrences.get(base) ?? 0;
     occurrences.set(base, n + 1);
     const key = occurrenceKey(base, n);

@@ -1,5 +1,5 @@
 // Read models for the web app (queue, audit feed, AI budget).
-import { and, asc, desc, eq, gt, gte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, gte, inArray, sql } from 'drizzle-orm';
 import type { Executor } from './client.js';
 import { agentRuns, auditLog, exceptions, proposals } from './schema.js';
 
@@ -63,4 +63,62 @@ export async function listProposalsForExceptionLatestFirst(db: Executor, excepti
     .from(proposals)
     .where(and(eq(proposals.exceptionId, exceptionId)))
     .orderBy(desc(proposals.createdAt));
+}
+
+const OPEN_EXCEPTION_STATUSES = [
+  'OPEN',
+  'TRIAGING',
+  'PROPOSED',
+  'AWAITING_APPROVAL',
+  'EXECUTING',
+  'AWAITING_SETTLEMENT',
+  'ESCALATED',
+  'FAILED',
+];
+
+/** W1: money at risk in open exceptions vs. money recovered (settled monetary proposals). */
+export async function moneyStats(db: Executor, since: Date) {
+  const atRisk = await db
+    .select({
+      currency: exceptions.currency,
+      cents: sql<string>`coalesce(sum(${exceptions.amountAtRiskCents}), 0)`,
+      n: sql<number>`count(*)::int`,
+    })
+    .from(exceptions)
+    .where(inArray(exceptions.status, OPEN_EXCEPTION_STATUSES))
+    .groupBy(exceptions.currency);
+  const recovered = await db
+    .select({
+      currency: proposals.currency,
+      cents: sql<string>`coalesce(sum(abs(${proposals.amountCents})), 0)`,
+      n: sql<number>`count(*)::int`,
+    })
+    .from(proposals)
+    .where(
+      and(
+        inArray(proposals.status, ['SUCCEEDED', 'SETTLED']),
+        inArray(proposals.actionType, [
+          'capture_authorization',
+          'reauthorize',
+          'retry_outstanding_balance',
+        ]),
+        gte(proposals.createdAt, since),
+      ),
+    )
+    .groupBy(proposals.currency);
+  const shape = (rows: { currency: string | null; cents: string; n: number }[]) =>
+    rows
+      .filter((r) => r.currency)
+      .map((r) => ({ currency: r.currency!, cents: Number(r.cents), count: r.n }));
+  return { atRisk: shape(atRisk), recovered: shape(recovered) };
+}
+
+/** W4: every audit row about an exception and its proposals, oldest first. */
+export async function auditForEntities(db: Executor, entityIds: readonly string[]) {
+  if (entityIds.length === 0) return [];
+  return db
+    .select()
+    .from(auditLog)
+    .where(inArray(auditLog.entityId, [...entityIds]))
+    .orderBy(asc(auditLog.seq));
 }
