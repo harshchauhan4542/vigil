@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { defaultMode, getServer } from '../../lib/server';
+import { defaultMode, getServer, readReplayInfo } from '../../lib/server';
 import { ControlRoom } from './control-room';
 
 export const dynamic = 'force-dynamic';
@@ -13,6 +13,8 @@ export default async function ControlRoomPage() {
     <ControlRoom
       mode={server.mode}
       fallbackReason={server.fallback?.reason ?? null}
+      replaySynthetic={server.mode === 'replay' && (readReplayInfo()?.synthetic ?? false)}
+      serverNow={server.gate.now?.().toISOString() ?? new Date().toISOString()}
       studioLicense={server.env.AG_STUDIO ?? ''}
     />
   );

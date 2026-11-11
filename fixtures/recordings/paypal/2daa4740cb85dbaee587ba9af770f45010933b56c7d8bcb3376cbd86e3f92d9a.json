@@ -1,0 +1,17 @@
+{
+  "key": "2daa4740cb85dbaee587ba9af770f45010933b56c7d8bcb3376cbd86e3f92d9a",
+  "kind": "paypal",
+  "request": {
+    "method": "GET",
+    "url": "/v1/reporting/transactions?fields=all&page=1&page_size=500",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": "{\"transaction_details\":[{\"transaction_info\":{\"transaction_id\":\"TX-2002\",\"transaction_event_code\":\"T0006\",\"transaction_initiation_date\":\"2026-11-02T12:00:00.000Z\",\"transaction_status\":\"S\",\"transaction_amount\":{\"currency_code\":\"USD\",\"value\":\"32.00\"},\"invoice_id\":\"VIG-ORD-2002\"}},{\"transaction_info\":{\"transaction_id\":\"TX-2004\",\"transaction_event_code\":\"T0006\",\"transaction_initiation_date\":\"2026-11-02T12:00:00.000Z\",\"transaction_status\":\"S\",\"transaction_amount\":{\"currency_code\":\"USD\",\"value\":\"21.50\"},\"invoice_id\":\"VIG-ORD-2004\"}}],\"page\":1,\"total_pages\":1}"
+  },
+  "recordedAt": "2026-11-02T09:01:36.545Z"
+}
