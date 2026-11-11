@@ -37,6 +37,8 @@ export async function bootstrap(
   const handle = await createDb({
     databaseUrl: env.DATABASE_URL,
     pgliteDir: path.resolve(repoRoot, env.PGLITE_DIR),
+    // Bundled entry points can't locate the migrations relative to their own file.
+    migrationsDir: path.resolve(repoRoot, 'packages/db/migrations'),
   });
   await handle.migrate();
   const store = new LayeredFixtureStore([
