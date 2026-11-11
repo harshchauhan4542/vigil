@@ -48,16 +48,42 @@ export function paypalKey(method: string, url: URL, bodyText: string): string {
 }
 
 /** Claude: sha256(model + system + messages + tools). Sampling knobs don't change the key. */
-export function llmKey(bodyText: string): string {
+const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+
+/** The fields of a Claude request that define the conversation, canonicalised. */
+function llmCanonical(bodyText: string): string {
   const body = (parseBody(bodyText) ?? {}) as Record<string, unknown>;
-  return sha256Hex(
-    canonicalJson({
-      model: body.model ?? null,
-      system: body.system ?? null,
-      messages: body.messages ?? null,
-      tools: body.tools ?? null,
-    }),
-  );
+  return canonicalJson({
+    model: body.model ?? null,
+    system: body.system ?? null,
+    messages: body.messages ?? null,
+    tools: body.tools ?? null,
+  });
+}
+
+/** Distinct UUIDs in order of first appearance. */
+export function uuidsInOrder(text: string): string[] {
+  return [...new Set((text.match(UUID_RE) ?? []).map((u) => u.toLowerCase()))];
+}
+
+/**
+ * Claude: sha256(model + system + messages + tools). Database row ids (UUIDs) differ between a
+ * recorded run and its replay, so they are replaced by first-appearance placeholders before
+ * hashing; sampling knobs (max_tokens, effort…) don't change the key.
+ */
+export function llmKey(bodyText: string): string {
+  const canonical = llmCanonical(bodyText);
+  const order = uuidsInOrder(canonical);
+  return sha256Hex(canonical.replace(UUID_RE, (u) => `<uuid:${order.indexOf(u.toLowerCase())}>`));
+}
+
+/** Rewrite the recorded run's UUIDs in a replayed body to this run's UUIDs, by position. */
+function remapUuids(text: string, recorded: string[], current: string[]): string {
+  if (recorded.length === 0) return text;
+  return text.replace(UUID_RE, (u) => {
+    const i = recorded.indexOf(u.toLowerCase());
+    return i >= 0 && current[i] ? current[i]! : u;
+  });
 }
 
 export interface ReplayFetchOptions {
@@ -115,7 +141,15 @@ export function createReplayFetch(options: ReplayFetchOptions): typeof fetch {
       for (let i = n; i >= 0 && !hit; i--)
         hit = await options.store.get(options.kind, occurrenceKey(base, i));
       if (!hit) throw new ReplayMissError(options.kind, base, `${request.method} ${url.pathname}`);
-      return new Response(hit.response.status === 204 ? null : hit.response.body, {
+      const body =
+        options.kind === 'llm'
+          ? remapUuids(
+              hit.response.body,
+              uuidsInOrder(llmCanonical(JSON.stringify(hit.request.body))),
+              uuidsInOrder(llmCanonical(bodyText)),
+            )
+          : hit.response.body;
+      return new Response(hit.response.status === 204 ? null : body, {
         status: hit.response.status,
         headers: hit.response.headers,
       });
