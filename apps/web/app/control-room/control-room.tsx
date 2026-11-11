@@ -1,13 +1,18 @@
 'use client';
-// The control room: exception queue (AG Grid), Proposal Card, live updates over SSE, and an
-// AG Studio analytics panel. Everything money-related goes through the server's gate.
-import { AllCommunityModule, ModuleRegistry, themeQuartz, type ColDef } from 'ag-grid-community';
+// The control room: money at risk and deadlines up top, the problem queue (AG Grid), the
+// Proposal Card, live updates over SSE, and an AG Studio analytics panel. Everything
+// money-related goes through the server's gate.
+import { AllCommunityModule, ModuleRegistry, type ColDef } from 'ag-grid-community';
 import { AgGridReact } from 'ag-grid-react';
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { vigilGridTheme } from '../ui/grid-theme';
+import { actionLabel, exceptionStatus, money, problemLabel, proposalStatus } from '../ui/labels';
+import { Pill } from '../ui/pill';
+import { TopBar } from '../ui/top-bar';
 import { ProposalCard } from './proposal-card';
 import type { QueueRow } from './types';
-import { DeadlineRadar, MoneyAtRisk, SettlementTrail } from './widgets';
+import { DeadlineStrip, MoneyAtRisk, SettlementTrail } from './widgets';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -16,27 +21,14 @@ const StudioPanel = dynamic(() => import('./studio-panel').then((m) => m.StudioP
   loading: () => <p className="muted">Loading analytics…</p>,
 });
 
-const money = (cents: number | null, currency: string | null) =>
-  cents === null || !currency
-    ? '—'
-    : new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(cents / 100);
-
-function countdown(deadline: string | null, now: number): string {
-  if (!deadline) return '—';
+function dueIn(deadline: string | null, now: number): { text: string; cls: string } {
+  if (!deadline) return { text: 'No rush', cls: 'muted' };
   const ms = Date.parse(deadline) - now;
-  const abs = Math.abs(ms);
-  const h = Math.floor(abs / 3_600_000);
-  const m = Math.floor((abs % 3_600_000) / 60_000);
-  return `${ms < 0 ? 'overdue ' : ''}${h}h ${m}m`;
+  const h = Math.floor(Math.abs(ms) / 3_600_000);
+  const m = Math.floor((Math.abs(ms) % 3_600_000) / 60_000);
+  if (ms < 0) return { text: `Overdue ${h}h ${m}m`, cls: 'due-bad' };
+  return { text: `${h}h ${m}m`, cls: h < 12 ? 'due-warn' : '' };
 }
-
-const CODES: Record<string, string> = {
-  FAILED_RENEWAL: 'E1',
-  UNTRACKED_CAPTURE: 'E2',
-  AUTH_HONOR_EXPIRING: 'E3',
-  UNMATCHED_TXN: 'E4',
-  DISPUTE_DEADLINE: 'E5',
-};
 
 export function ControlRoom({
   mode,
@@ -52,6 +44,8 @@ export function ControlRoom({
   replaySynthetic: boolean;
   studioLicense: string;
 }) {
+  const grid = useRef<AgGridReact<QueueRow>>(null);
+  const cardRef = useRef<HTMLElement>(null);
   const [rows, setRows] = useState<QueueRow[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   // Offset between the server clock (frozen demo clock in Replay) and this browser.
@@ -68,9 +62,8 @@ export function ControlRoom({
   useEffect(() => {
     void load();
     const es = new EventSource('/api/events');
-    es.addEventListener('audit', (e) => {
-      const ev = JSON.parse((e as MessageEvent).data) as { action: string; entity_type: string };
-      setLastEvent(`${ev.action} (${ev.entity_type})`);
+    es.addEventListener('audit', () => {
+      setLastEvent(new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }));
       setVersion((v) => v + 1);
       void load();
     });
@@ -81,14 +74,39 @@ export function ControlRoom({
     };
   }, [load, offset]);
 
+  const revealCard = () => {
+    const el = cardRef.current;
+    if (!el || el.getBoundingClientRect().top < window.innerHeight * 0.6) return;
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' });
+  };
+
+  const selectRow = (id: string) => {
+    const node = grid.current?.api.getRowNode(id);
+    if (node) {
+      node.setSelected(true, true);
+      grid.current?.api.ensureNodeVisible(node);
+    } else setSelected(id);
+  };
+
   const columns = useMemo<ColDef<QueueRow>[]>(
     () => [
       {
-        headerName: 'Type',
-        valueGetter: (p) => `${CODES[p.data!.type] ?? ''} ${p.data!.type}`,
-        width: 210,
+        headerName: 'Problem',
+        valueGetter: (p) => problemLabel(p.data!.type),
+        cellRenderer: (p: { data: QueueRow }) => (
+          <span title={p.data.type}>{problemLabel(p.data.type)}</span>
+        ),
+        flex: 1.3,
+        minWidth: 210,
       },
-      { headerName: 'Target', field: 'targetRef', flex: 1, minWidth: 160, cellClass: 'mono' },
+      {
+        headerName: 'PayPal reference',
+        field: 'targetRef',
+        flex: 1,
+        minWidth: 170,
+        cellClass: 'mono',
+      },
       {
         headerName: 'At risk',
         valueGetter: (p) => p.data!.amountAtRiskCents,
@@ -97,27 +115,46 @@ export function ControlRoom({
         type: 'rightAligned',
       },
       {
-        headerName: 'Deadline',
-        valueGetter: (p) => countdown(p.data!.deadlineAt, now),
+        headerName: 'Time left',
+        valueGetter: (p) => dueIn(p.data!.deadlineAt, now).text,
+        comparator: (_a, _b, x, y) =>
+          (x.data?.deadlineAt ? Date.parse(x.data.deadlineAt) : Infinity) -
+          (y.data?.deadlineAt ? Date.parse(y.data.deadlineAt) : Infinity),
+        cellRenderer: (p: { data: QueueRow }) => {
+          const d = dueIn(p.data.deadlineAt, now);
+          return <span className={d.cls}>{d.text}</span>;
+        },
         width: 130,
       },
-      { headerName: 'Status', field: 'status', width: 170 },
       {
-        headerName: 'Proposal',
-        valueGetter: (p) =>
-          p.data!.latestProposal
-            ? `${p.data!.latestProposal.actionType} · ${p.data!.latestProposal.status}`
-            : '—',
-        flex: 1,
-        minWidth: 180,
+        headerName: 'Status',
+        valueGetter: (p) => exceptionStatus(p.data!.status)[0],
+        cellRenderer: (p: { data: QueueRow }) => {
+          const [label, tone] = exceptionStatus(p.data.status);
+          return <Pill label={label} tone={tone} code={p.data.status} />;
+        },
+        width: 215,
       },
       {
-        headerName: 'Tier',
+        headerName: 'Suggested fix',
+        // Include the status so the cell re-renders when the proposal moves on.
         valueGetter: (p) =>
-          (p.data!.latestProposal?.riskTier ?? null) === null
-            ? ''
-            : `T${p.data!.latestProposal!.riskTier}`,
-        width: 70,
+          p.data!.latestProposal
+            ? `${proposalStatus(p.data!.latestProposal.status)[0]} ${actionLabel(p.data!.latestProposal.actionType)}`
+            : '',
+        cellRenderer: (p: { data: QueueRow }) => {
+          const lp = p.data.latestProposal;
+          if (!lp) return <span className="muted">None yet</span>;
+          const [label, tone] = proposalStatus(lp.status);
+          return (
+            <div className="cell-fix">
+              <Pill label={label} tone={tone} code={lp.status} />
+              <span title={lp.actionType}>{actionLabel(lp.actionType)}</span>
+            </div>
+          );
+        },
+        flex: 1.5,
+        minWidth: 280,
       },
       { headerName: 'Priority', field: 'score', sort: 'desc', width: 100, hide: true },
     ],
@@ -125,59 +162,76 @@ export function ControlRoom({
   );
 
   const current = rows.find((r) => r.id === selected) ?? null;
-
-  async function switchMode(next: 'live' | 'replay') {
-    await fetch('/api/demo/mode', {
-      method: 'POST',
-      body: JSON.stringify({ mode: next }),
-      headers: { 'content-type': 'application/json' },
-    });
-    window.location.reload();
-  }
+  const needsYou = rows.filter((r) => r.latestProposal?.status === 'PENDING_APPROVAL').length;
 
   return (
     <>
-      <header className="topbar">
-        <span className="wordmark">VIGIL</span>
-        <span className="muted">Money-ops control room</span>
-        <span style={{ flex: 1 }} />
-        <span className="muted mono">{lastEvent}</span>
-        <a href="/audit">Audit log</a>
-        <a href="/judge">Judge panel</a>
-        <button onClick={() => switchMode(mode === 'live' ? 'replay' : 'live')}>
-          Switch to {mode === 'live' ? 'Replay' : 'Live'}
-        </button>
-      </header>
-      <div className={`banner ${mode}`}>
-        {fallbackReason
-          ? `Live is unavailable (${fallbackReason}), so you are seeing Replay. `
-          : ''}
-        {mode === 'replay'
-          ? replaySynthetic
-            ? "REPLAY MODE: recorded responses from Vigil's PayPal simulator and a scripted agent (synthetic demo data). No keys, no network, deterministic."
-            : 'REPLAY MODE: recorded PayPal sandbox and Claude responses. No keys, no network, deterministic.'
-          : 'LIVE MODE: real PayPal sandbox calls and real Claude. Every money action needs policy + your approval.'}
+      <TopBar page="control-room" mode={mode}>
+        {lastEvent && (
+          <span className="muted" style={{ fontSize: 13 }} aria-live="polite">
+            Updated at {lastEvent}
+          </span>
+        )}
+      </TopBar>
+      <div className={`mode-note${fallbackReason ? ' fallback' : ''}`}>
+        {fallbackReason ? (
+          <>
+            <strong>Live mode isn't working right now</strong> ({fallbackReason}), so you are seeing
+            demo data.{' '}
+          </>
+        ) : null}
+        {mode === 'replay' ? (
+          <>
+            <strong>Demo mode.</strong>{' '}
+            {replaySynthetic
+              ? 'You are looking at made-up sample data. Nothing here touches a real PayPal account, so click around freely.'
+              : 'You are looking at a recording of a PayPal test account. Nothing here touches real money, so click around freely.'}
+          </>
+        ) : (
+          <>
+            <strong>Live mode.</strong> Connected to your PayPal test (sandbox) account. No money
+            moves until the safety rules pass and you press Approve.
+          </>
+        )}
       </div>
-      <main className="layout">
-        <section className="panel" style={{ gridColumn: '1 / -1' }}>
-          <MoneyAtRisk version={version} />
-        </section>
-        <section className="panel">
-          <h2>Exception queue</h2>
-          <div style={{ height: 420 }}>
+
+      <section className="band" aria-label="Overview">
+        <MoneyAtRisk version={version} />
+        <DeadlineStrip rows={rows} now={now} selected={selected} onSelect={selectRow} />
+      </section>
+
+      <main className="workspace">
+        <section className="panel wide">
+          <div className="panel-head">
+            <div>
+              <h2>Problems Vigil found in your PayPal account</h2>
+              <p className="muted">
+                {needsYou > 0
+                  ? `${needsYou} ${needsYou === 1 ? 'fix is' : 'fixes are'} waiting for your OK. Click a row to see it.`
+                  : 'Click a row to see what Vigil suggests.'}
+              </p>
+            </div>
+          </div>
+          {/* Tall enough for every row (up to 9) without an inner scrollbar. */}
+          <div style={{ height: 46 + 52 * Math.min(Math.max(rows.length, 3), 9) }}>
             <AgGridReact<QueueRow>
-              theme={themeQuartz}
+              ref={grid}
+              theme={vigilGridTheme}
               rowData={rows}
               columnDefs={columns}
               getRowId={(p) => p.data.id}
               rowSelection={{ mode: 'singleRow', checkboxes: false, enableClickSelection: true }}
-              onSelectionChanged={(e) => setSelected(e.api.getSelectedRows()[0]?.id ?? null)}
-              overlayNoRowsTemplate="No open exceptions. Run detection (pnpm flow) or reset the demo."
+              onSelectionChanged={(e) => {
+                const id = e.api.getSelectedRows()[0]?.id ?? null;
+                setSelected(id);
+                if (id) revealCard();
+              }}
+              overlayNoRowsTemplate="All clear: no money problems right now. To check PayPal again, open Help."
             />
           </div>
         </section>
-        <section className="panel">
-          <h2>Proposal</h2>
+
+        <section className="panel" aria-label="Suggested fix" ref={cardRef}>
           {current?.latestProposal ? (
             <ProposalCard
               key={`${current.latestProposal.id}:${version}`}
@@ -185,25 +239,49 @@ export function ControlRoom({
               onChanged={load}
             />
           ) : (
-            <p className="muted">
-              {current ? 'No proposal yet for this exception.' : 'Select an exception.'}
-            </p>
+            <div className="empty">
+              <strong>{current ? 'No fix suggested yet' : 'Pick a problem to start'}</strong>
+              {current ? (
+                'The AI is still looking into this one, or it needs you to handle it in PayPal.'
+              ) : (
+                <>
+                  Click a row in the list, or an amount on the timeline above.
+                  <ol className="how">
+                    <li>Vigil spots a money problem in your PayPal account.</li>
+                    <li>The AI suggests a fix and explains why.</li>
+                    <li>Safety rules check the fix.</li>
+                    <li>You press Approve. Only then does Vigil ask PayPal to make the change.</li>
+                  </ol>
+                </>
+              )}
+            </div>
           )}
         </section>
+
         <section className="panel">
-          <h2>Deadline radar</h2>
-          <DeadlineRadar rows={rows} now={now} />
+          <div className="panel-head">
+            <div>
+              <h2>What happened</h2>
+              <p className="muted">
+                {current
+                  ? 'Every step so far, from spotting the problem to PayPal confirming the fix.'
+                  : 'Pick a problem to see everything that happened with it.'}
+              </p>
+            </div>
+          </div>
+          {current && <SettlementTrail exceptionId={current.id} version={version} />}
         </section>
-        <section className="panel">
-          <h2>Settlement trail</h2>
-          {current ? (
-            <SettlementTrail exceptionId={current.id} version={version} />
-          ) : (
-            <p className="muted">Select an exception to see its trail.</p>
-          )}
-        </section>
-        <section className="panel" style={{ gridColumn: '1 / -1' }}>
-          <h2>Analytics (AG Studio)</h2>
+
+        <section className="panel wide">
+          <div className="panel-head">
+            <div>
+              <h2>Charts and questions</h2>
+              <p className="muted">
+                Drag fields to build a chart, or ask the assistant a question about your problems
+                (powered by AG Studio).
+              </p>
+            </div>
+          </div>
           <StudioPanel rows={rows} licenseKey={studioLicense} />
         </section>
       </main>

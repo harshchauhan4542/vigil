@@ -1,15 +1,16 @@
 'use client';
-// W1 Money-at-Risk, W2 Deadline Radar, W4 Settlement Trail.
+// W1 Money-at-Risk, W2 Deadline strip (next 72 hours), W4 Settlement Trail.
 import { useEffect, useState } from 'react';
+import { ACTOR, money, problemLabel } from '../ui/labels';
 import type { QueueRow } from './types';
-
-const fmt = (cents: number, currency: string) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(cents / 100);
 
 interface Stats {
   atRisk: { currency: string; cents: number; count: number }[];
   recovered: { currency: string; cents: number; count: number }[];
 }
+
+const sum = (rows: Stats['atRisk'] | undefined) =>
+  rows?.length ? rows.map((r) => money(r.cents, r.currency)).join(' + ') : '$0.00';
 
 export function MoneyAtRisk({ version }: { version: number }) {
   const [s, setS] = useState<Stats | null>(null);
@@ -19,51 +20,108 @@ export function MoneyAtRisk({ version }: { version: number }) {
       .then(setS)
       .catch(() => {});
   }, [version]);
-  const line = (rows: Stats['atRisk'] | undefined) =>
-    rows?.length ? rows.map((r) => fmt(r.cents, r.currency)).join(' + ') : '$0.00';
+  const open = s?.atRisk.reduce((n, r) => n + r.count, 0) ?? 0;
+  const fixed = s?.recovered.reduce((n, r) => n + r.count, 0) ?? 0;
   return (
-    <div className="tiles">
-      <div className="tile">
-        <div className="muted">Money at risk</div>
-        <div className="big bad">{line(s?.atRisk)}</div>
-        <div className="muted">
-          {s?.atRisk.reduce((n, r) => n + r.count, 0) ?? 0} open exceptions
+    <>
+      <div>
+        <div className="figure-label">Money at risk</div>
+        <div className="figure risk">{sum(s?.atRisk)}</div>
+        <div className="figure-sub">
+          across {open} open {open === 1 ? 'problem' : 'problems'}
         </div>
       </div>
-      <div className="tile">
-        <div className="muted">Recovered (7 days)</div>
-        <div className="big ok">{line(s?.recovered)}</div>
-        <div className="muted">
-          {s?.recovered.reduce((n, r) => n + r.count, 0) ?? 0} executed fixes
+      <div>
+        <div className="figure-label">Recovered this week</div>
+        <div className="figure saved">{sum(s?.recovered)}</div>
+        <div className="figure-sub">
+          {fixed} {fixed === 1 ? 'fix' : 'fixes'} completed
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
-export function DeadlineRadar({ rows, now }: { rows: QueueRow[]; now: number }) {
-  const upcoming = rows
+const HORIZON_H = 72;
+
+/** Every open deadline on one 72-hour line, so the most urgent problem is obvious at a glance. */
+export function DeadlineStrip({
+  rows,
+  now,
+  selected,
+  onSelect,
+}: {
+  rows: QueueRow[];
+  now: number;
+  selected: string | null;
+  onSelect: (id: string) => void;
+}) {
+  const marks = rows
     .filter((r) => r.deadlineAt && !['RESOLVED', 'DISMISSED'].includes(r.status))
-    .map((r) => ({ ...r, ms: Date.parse(r.deadlineAt!) - now }))
-    .sort((a, b) => a.ms - b.ms)
-    .slice(0, 6);
-  if (upcoming.length === 0) return <p className="muted">No deadlines in the queue.</p>;
+    .map((r) => ({ ...r, h: (Date.parse(r.deadlineAt!) - now) / 3_600_000 }))
+    .sort((a, b) => a.h - b.h);
+
+  // Stack marks into lanes so nearby labels never overlap.
+  const laneEnd: number[] = [];
+  const placed = marks.map((m) => {
+    const pos = Math.min(Math.max(m.h, 0), HORIZON_H) / HORIZON_H;
+    let lane = laneEnd.findIndex((end) => pos > end);
+    if (lane === -1) lane = Math.min(laneEnd.length, 2);
+    laneEnd[lane] = pos + 0.22;
+    return { ...m, pos, lane };
+  });
+
   return (
-    <ul className="radar">
-      {upcoming.map((r) => {
-        const h = r.ms / 3_600_000;
-        const cls = h <= 0 ? 'bad' : h <= 12 ? 'warn' : 'ok';
-        return (
-          <li key={r.id}>
-            <span className={`dot ${cls}`} />
-            <span className="mono">{r.targetRef}</span>
-            <span className={cls}>
-              {h <= 0 ? `overdue ${Math.abs(h).toFixed(1)}h` : `${h.toFixed(1)}h left`}
+    <div className="strip-wrap">
+      <div className="strip-title">
+        <span>Deadlines in the next 72 hours</span>
+        <span>{marks.filter((m) => m.h <= 12).length} due within 12h</span>
+      </div>
+      {marks.length === 0 ? (
+        <p className="strip-empty">Nothing is on the clock. New deadlines show up here.</p>
+      ) : (
+        <div className="strip">
+          <div className="strip-axis" />
+          {[0, 12, 24, 48, 72].map((t) => (
+            <span key={t} className="strip-tick" style={{ left: `${(t / HORIZON_H) * 100}%` }}>
+              {t === 0 ? 'now' : `${t}h`}
             </span>
-          </li>
-        );
-      })}
-    </ul>
+          ))}
+          {placed.map((m) => {
+            const cls = m.h <= 0 ? 'bad' : m.h <= 12 ? 'warn' : 'ok';
+            const flip = m.pos > 0.75;
+            const when =
+              m.h <= 0
+                ? `overdue ${Math.abs(m.h).toFixed(0)}h`
+                : m.h > HORIZON_H
+                  ? `${Math.round(m.h)}h`
+                  : `${m.h.toFixed(0)}h left`;
+            return (
+              <button
+                key={m.id}
+                className={`strip-mark ${cls}`}
+                style={{
+                  left: `${m.pos * 100}%`,
+                  bottom: `${30 + m.lane * 26}px`,
+                  // Labels near the right edge grow leftwards to stay inside the strip.
+                  ...(flip
+                    ? { transform: 'translateX(calc(-100% + 6px))', padding: '2px 0 2px 8px' }
+                    : {}),
+                }}
+                aria-pressed={selected === m.id}
+                title={`${problemLabel(m.type)}: ${m.targetRef}`}
+                onClick={() => onSelect(m.id)}
+              >
+                {!flip && <span className="pin" />}
+                {money(m.amountAtRiskCents, m.currency)}
+                <span className="when">{when}</span>
+                {flip && <span className="pin" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -77,12 +135,32 @@ interface TrailRow {
 }
 
 const LABEL: Record<string, string> = {
-  'exception.detected': 'Detected',
-  'exception.reopened': 'Re-opened',
-  'proposal.drafted': 'Agent proposed (DRAFT)',
-  'approval.approved': 'Human approved',
-  'approval.rejected': 'Human rejected',
-  'webhook.simulated_ignored': 'Simulated webhook ignored',
+  'exception.detected': 'Vigil spotted the problem',
+  'exception.reopened': 'The problem came back',
+  'proposal.drafted': 'The AI suggested a fix',
+  'approval.approved': 'You approved the fix',
+  'approval.rejected': 'You rejected the fix',
+  'webhook.simulated_ignored': 'Ignored an unverified message claiming to be PayPal',
+};
+
+const STATE_WORDS: Record<string, string> = {
+  TRIAGING: 'The AI started looking into it',
+  PROPOSED: 'Fix proposed',
+  AWAITING_APPROVAL: 'Waiting for your approval',
+  PENDING_APPROVAL: 'Fix passed the safety rules, waiting for you',
+  POLICY_REJECTED: 'The safety rules blocked the fix',
+  ESCALATED: 'Needs your attention',
+  APPROVED: 'Approval recorded',
+  QUEUED: 'Queued to run',
+  EXECUTING: 'Sent to PayPal',
+  SUCCEEDED: 'PayPal accepted the change',
+  AWAITING_SETTLEMENT: 'Waiting for PayPal to confirm',
+  SETTLED: 'PayPal confirmed it',
+  RESOLVED: 'Problem resolved',
+  FAILED_FINAL: 'PayPal refused the change',
+  FAILED: 'Fix failed',
+  REJECTED: 'Fix rejected',
+  EXPIRED: 'Fix expired',
 };
 
 export function SettlementTrail({
@@ -99,17 +177,23 @@ export function SettlementTrail({
       .then((j) => setRows(j.trail ?? []))
       .catch(() => {});
   }, [exceptionId, version]);
+  if (rows.length === 0) return <p className="muted">No activity yet.</p>;
   return (
     <ol className="trail">
       {rows.map((r) => {
         const to = typeof r.payload?.to === 'string' ? r.payload.to : null;
+        const label =
+          LABEL[r.action] ??
+          (to ? (STATE_WORDS[to] ?? `${r.action.split('.')[0]} → ${to}`) : r.action);
         return (
           <li key={r.seq}>
-            <strong>
-              {LABEL[r.action] ?? (to ? `${r.action.split('.')[0]} → ${to}` : r.action)}
-            </strong>{' '}
-            <span className="muted">
-              {new Date(r.ts).toLocaleTimeString()} · {r.actor} · #{r.seq} {r.hash}
+            <strong>{label}</strong>
+            <span className="meta">
+              {new Date(r.ts).toLocaleTimeString()}, by{' '}
+              {ACTOR[r.actor.split(':')[0] ?? ''] ?? 'Vigil'}{' '}
+              <span className="mono" title={`Audit row #${r.seq}, hash ${r.hash}`}>
+                #{r.seq}
+              </span>
             </span>
           </li>
         );

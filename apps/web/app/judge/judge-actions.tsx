@@ -3,59 +3,53 @@ import { useState } from 'react';
 
 export function JudgeActions({ mode }: { mode: 'live' | 'replay' }) {
   const [msg, setMsg] = useState<string | null>(null);
-
-  async function setMode(next: 'live' | 'replay') {
-    await fetch('/api/demo/mode', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ mode: next }),
-    });
-    window.location.reload();
-  }
+  const live = mode === 'live';
 
   async function detect() {
-    setMsg('Running detection…');
+    setMsg('Checking your PayPal account…');
     const r = await fetch('/api/demo/detect', { method: 'POST' });
     const j = (await r.json()) as { ok?: boolean; error?: string };
     setMsg(
       j.ok
-        ? 'Detection started: new exceptions appear in the control room.'
-        : `Not run: ${j.error ?? r.status}`,
+        ? 'Checking now. Any new problems will show up on the Problems page in a few seconds.'
+        : `Couldn't check PayPal (${j.error ?? r.status}). Try again in a minute.`,
     );
   }
 
   async function reset() {
-    setMsg('Resetting…');
+    setMsg('Starting over with fresh test data…');
     const r = await fetch('/api/demo/reset', { method: 'POST' });
     const j = (await r.json()) as { ok?: boolean; error?: string };
     setMsg(
       j.ok
-        ? 'Fresh demo data is being created (a minute or two).'
-        : `Not reset: ${j.error ?? r.status}`,
+        ? 'Creating fresh test orders in your PayPal sandbox. This takes a minute or two.'
+        : `Couldn't reset (${j.error ?? r.status}). Try again in a minute.`,
     );
   }
 
   return (
-    <div className="row">
-      <button onClick={() => setMode(mode === 'live' ? 'replay' : 'live')}>
-        Switch to {mode === 'live' ? 'Replay' : 'Live'}
-      </button>
-      <button
-        disabled={mode === 'replay'}
-        onClick={reset}
-        title="Live only: new holds, captures and ledger rows"
-      >
-        Reset demo data
-      </button>
-      <button
-        disabled={mode === 'replay'}
-        onClick={detect}
-        title="Live only: sweep PayPal now (the cron does this every 15 min)"
-      >
-        Run detection now
-      </button>
-      <a href="/control-room">Open the control room →</a>
-      {msg && <span className="muted">{msg}</span>}
-    </div>
+    <>
+      <div className="row">
+        <a className="btn-link primary" href="/control-room">
+          See the problems
+        </a>
+        <button
+          disabled={!live}
+          onClick={detect}
+          title="Vigil also checks by itself every 15 minutes"
+        >
+          Check PayPal now
+        </button>
+        <button disabled={!live} onClick={reset} title="Creates new test orders and payments">
+          Start over with fresh test data
+        </button>
+      </div>
+      <p className="status-line muted" role="status">
+        {msg ??
+          (live
+            ? 'Vigil checks your PayPal account every 15 minutes. Press "Check PayPal now" to check right away.'
+            : 'These two buttons only work in Live mode. Switch with Demo / Live at the top right.')}
+      </p>
+    </>
   );
 }

@@ -78,3 +78,4 @@ Legend: ☐ not started · 🟡 in progress · ✅ done · ❌ blocked
 | 2026-11-02 | 19       | ✅ Zero-key Replay world, Playwright e2e in CI, pnpm demo, security scan, Postman                     | [2026-11-02-step-19-hardening.md](2026-11-02-step-19-hardening.md)         |
 | 2026-11-02 | 20       | 🟡 Final README, Devpost draft, final + keep-alive checklist                                          | [2026-11-02-step-20-final.md](2026-11-02-step-20-final.md)                 |
 | 2026-11-11 | LLM      | ✅ Merged PRs #10–#22; PayPal live smoke; Groq gpt-oss-120b provider; dev loads root .env             | [2026-11-11-llm-provider.md](2026-11-11-llm-provider.md)                   |
+| 2026-11-11 | UI       | ✅ Merchant-friendly redesign, light + dark themes, dev/Demo fixes, no Claude attribution             | [2026-11-11-llm-provider.md](2026-11-11-llm-provider.md)                   |
