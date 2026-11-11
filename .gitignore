@@ -11,3 +11,6 @@ coverage/
 .data/
 *.tsbuildinfo
 .next-*/
+.next-e2e
+test-results
+playwright-report

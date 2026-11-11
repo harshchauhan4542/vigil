@@ -61,3 +61,28 @@ jobs:
           if git ls-files | grep -E '(^|/)\.env$|(^|/)\.env\.(?!example)' -P; then
             echo "::error::.env file is tracked by git"; exit 1
           fi
+
+  e2e:
+    name: e2e (Playwright, Replay mode, zero keys)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: checks
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        run: pnpm --filter @vigil/web exec playwright install --with-deps chromium
+      - name: Playwright
+        run: pnpm e2e
+        env:
+          CI: '1'
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: apps/web/test-results
