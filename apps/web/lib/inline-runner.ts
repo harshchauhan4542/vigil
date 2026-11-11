@@ -5,8 +5,8 @@
 import { triageException } from '@vigil/agent';
 import type { WebEnv } from '@vigil/config';
 import type { VigilMode } from '@vigil/core';
-import { InlineTaskRunner } from '@vigil/tasks';
-import { buildHandlers, type WorkflowContext } from '@vigil/workflows';
+import { InlineTaskRunner, type TaskRunner } from '@vigil/tasks';
+import { buildHandlers, prepareReplayWorld, type WorkflowContext } from '@vigil/workflows';
 import type { Core } from './server';
 
 export function createInlineRunner(
@@ -47,9 +47,14 @@ export function createInlineRunner(
           )
       : null,
     maxAttempts: 3,
-    now: () => new Date(),
+    now: core.now,
     sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
     log: (event, fields = {}) => console.log(JSON.stringify({ event, ...fields })),
   };
   return runner.register(buildHandlers(async () => ctx));
+}
+
+/** Replay: load the demo seed into the isolated database and run the first sweep. */
+export async function prepareReplay(core: Core, runner: TaskRunner, repoRoot: string) {
+  return prepareReplayWorld(core.db, runner, repoRoot);
 }

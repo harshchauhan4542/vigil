@@ -41,7 +41,8 @@ export interface DetectOptions {
 
 export interface DetectSummary {
   authorizationsSynced: number;
-  transactionsSynced: number;
+  /** null = Transaction Search not available to this PayPal app; E4 was skipped. */
+  transactionsSynced: number | null;
   detected: number;
   created: string[];
   reopened: string[];
@@ -102,15 +103,25 @@ export async function syncCaptures(db: Db, http: PayPalHttp): Promise<number> {
   return n;
 }
 
+/**
+ * Transaction Search is an opt-in feature on PayPal apps (and lags up to 3 h). If the app isn't
+ * allowed to use it (401/403), return null so E4 is skipped instead of flagging every ledger row.
+ */
 export async function syncTransactions(
   db: Db,
   http: PayPalHttp,
   start: Date,
   end: Date,
-): Promise<number> {
+): Promise<number | null> {
   const rows = [];
-  for await (const detail of reads.searchTransactions(http, start, end))
-    rows.push(transactionRow(detail));
+  try {
+    for await (const detail of reads.searchTransactions(http, start, end))
+      rows.push(transactionRow(detail));
+  } catch (error) {
+    if (error instanceof PayPalApiError && (error.status === 401 || error.status === 403))
+      return null;
+    throw error;
+  }
   await upsertTransactions(db, rows);
   return rows.length;
 }
@@ -128,14 +139,13 @@ export async function detectExceptions(options: DetectOptions): Promise<DetectSu
   const transactionsSynced = await syncTransactions(db, http, start, now);
 
   // Judge the books only inside the window, keeping the ±2-day tolerance away from its edges.
-  const ledger = await listLedgerBetween(
-    db,
-    isoDay(new Date(start.getTime() + 2 * DAY)),
-    isoDay(ledgerEnd),
-  );
+  const e4Enabled = transactionsSynced !== null;
+  const ledger = e4Enabled
+    ? await listLedgerBetween(db, isoDay(new Date(start.getTime() + 2 * DAY)), isoDay(ledgerEnd))
+    : [];
   const { exceptions, ledgerMatches } = detectAll({
     authorizations: await listAuthorizations(db),
-    transactions: await listTransactionsBetween(db, start, now),
+    transactions: e4Enabled ? await listTransactionsBetween(db, start, now) : [],
     ledger,
     subscriptions: await listSubscriptions(db),
     captures: await listCapturesForDetection(db),

@@ -1,0 +1,17 @@
+{
+  "key": "fae819078136d30ae0a75bbdba51f2c9963dae715058f91a05574c430bec9701",
+  "kind": "paypal",
+  "request": {
+    "method": "GET",
+    "url": "/v2/payments/authorizations/AUTH-612",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": "{\"id\":\"AUTH-612\",\"status\":\"CREATED\",\"amount\":{\"currency_code\":\"USD\",\"value\":\"612.00\"},\"create_time\":\"2026-11-02T21:00:00.000Z\",\"expiration_time\":\"2026-12-01T21:00:00.000Z\",\"supplementary_data\":{\"related_ids\":{\"order_id\":\"ORDER-AUTH-612\"}}}"
+  },
+  "recordedAt": "2026-11-02T09:01:36.501Z"
+}

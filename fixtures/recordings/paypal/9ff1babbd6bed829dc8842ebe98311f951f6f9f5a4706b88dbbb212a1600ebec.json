@@ -1,0 +1,17 @@
+{
+  "key": "9ff1babbd6bed829dc8842ebe98311f951f6f9f5a4706b88dbbb212a1600ebec",
+  "kind": "paypal",
+  "request": {
+    "method": "GET",
+    "url": "/v1/billing/subscriptions/I-BEANS",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": "{\"id\":\"I-BEANS\",\"plan_id\":\"P-PLAN\",\"status\":\"ACTIVE\",\"billing_info\":{\"outstanding_balance\":{\"currency_code\":\"USD\",\"value\":\"24.00\"},\"failed_payments_count\":1,\"last_failed_payment\":{\"amount\":{\"currency_code\":\"USD\",\"value\":\"24.00\"},\"time\":\"2026-11-05T02:00:00.000Z\",\"reason_code\":\"PAYMENT_DENIED\"}}}"
+  },
+  "recordedAt": "2026-11-02T09:01:37.185Z"
+}

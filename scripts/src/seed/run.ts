@@ -12,6 +12,7 @@ import {
   type SeedObject,
 } from '@vigil/db';
 import {
+  PayPalApiError,
   paypalRequestId,
   reads,
   type MutatingOperation,
@@ -225,24 +226,38 @@ export async function runSeed(options: SeedOptions): Promise<SeedSummary> {
       return;
     }
 
-    let order: Order = existing
-      ? await reads.getOrder(http, existing.paypalId)
-      : await createOrder(
-          http,
-          {
-            intent,
-            amount: usd(seed.amountCents),
-            custom_id: `vigil-seed-${seed.key}`,
-            invoice_id: seed.invoiceId,
-            description: seed.injection
-              ? `${seed.description} (see support note)`
-              : seed.description,
-            ...(options.card ? { card: options.card } : {}),
-            return_url: returnUrl,
-            cancel_url: cancelUrl,
-          },
-          { requestId: rid(seed.key, 'orders.create') },
+    const create = (withCard: boolean) =>
+      createOrder(
+        http,
+        {
+          intent,
+          amount: usd(seed.amountCents),
+          custom_id: `vigil-seed-${seed.key}`,
+          invoice_id: seed.invoiceId,
+          description: seed.injection ? `${seed.description} (see support note)` : seed.description,
+          ...(withCard && options.card ? { card: options.card } : {}),
+          return_url: returnUrl,
+          cancel_url: cancelUrl,
+        },
+        // A different body needs a different request id (same id + new body = PayPal error).
+        { requestId: rid(withCard ? seed.key : `${seed.key}:link`, 'orders.create') },
+      );
+    let order: Order;
+    if (existing) {
+      order = await reads.getOrder(http, existing.paypalId);
+    } else {
+      try {
+        order = await create(!!options.card);
+      } catch (error) {
+        // Spike S2 Plan B: the sandbox refused the test card (no advanced card processing on the
+        // account, declined, …) → create a buyer-approval order instead.
+        if (!options.card || !(error instanceof PayPalApiError) || error.status >= 500) throw error;
+        log(
+          `  ${seed.key}: card refused (${error.issue ?? error.status}); using a buyer-approval link`,
         );
+        order = await create(false);
+      }
+    }
     if (!existing) summary.created.push(seed.key);
 
     // Buyer approved since last run (or a card order came back APPROVED): finish it.
