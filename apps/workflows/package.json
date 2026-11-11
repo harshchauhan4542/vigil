@@ -10,7 +10,8 @@
     "test": "vitest run",
     "flow": "node --env-file-if-exists=../../.env --import tsx src/cli.ts",
     "start:worker": "node dist/worker.js",
-    "start:cron": "node dist/cron.js"
+    "start:cron": "node dist/cron.js",
+    "demo:build": "node --import tsx src/demo/build-demo.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.14",

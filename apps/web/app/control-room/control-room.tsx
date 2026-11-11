@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ProposalCard } from './proposal-card';
 import type { QueueRow } from './types';
+import { DeadlineRadar, MoneyAtRisk, SettlementTrail } from './widgets';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -40,15 +41,22 @@ const CODES: Record<string, string> = {
 export function ControlRoom({
   mode,
   fallbackReason,
+  replaySynthetic,
+  serverNow,
   studioLicense,
 }: {
+  /** The server's clock (frozen in Replay); countdowns follow it, not the browser's. */
+  serverNow: string;
   mode: 'live' | 'replay';
   fallbackReason: string | null;
+  replaySynthetic: boolean;
   studioLicense: string;
 }) {
   const [rows, setRows] = useState<QueueRow[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
-  const [now, setNow] = useState(() => Date.now());
+  // Offset between the server clock (frozen demo clock in Replay) and this browser.
+  const [offset] = useState(() => Date.parse(serverNow) - Date.now());
+  const [now, setNow] = useState(() => Date.now() + offset);
   const [lastEvent, setLastEvent] = useState<string>('');
   const [version, setVersion] = useState(0);
 
@@ -66,12 +74,12 @@ export function ControlRoom({
       setVersion((v) => v + 1);
       void load();
     });
-    const t = setInterval(() => setNow(Date.now()), 30_000);
+    const t = setInterval(() => setNow(Date.now() + offset), 30_000);
     return () => {
       es.close();
       clearInterval(t);
     };
-  }, [load]);
+  }, [load, offset]);
 
   const columns = useMemo<ColDef<QueueRow>[]>(
     () => [
@@ -134,6 +142,8 @@ export function ControlRoom({
         <span className="muted">Money-ops control room</span>
         <span style={{ flex: 1 }} />
         <span className="muted mono">{lastEvent}</span>
+        <a href="/audit">Audit log</a>
+        <a href="/judge">Judge panel</a>
         <button onClick={() => switchMode(mode === 'live' ? 'replay' : 'live')}>
           Switch to {mode === 'live' ? 'Replay' : 'Live'}
         </button>
@@ -143,10 +153,15 @@ export function ControlRoom({
           ? `Live is unavailable (${fallbackReason}), so you are seeing Replay. `
           : ''}
         {mode === 'replay'
-          ? 'REPLAY MODE: recorded PayPal sandbox and Claude responses. No keys, no network, deterministic.'
+          ? replaySynthetic
+            ? "REPLAY MODE: recorded responses from Vigil's PayPal simulator and a scripted agent (synthetic demo data). No keys, no network, deterministic."
+            : 'REPLAY MODE: recorded PayPal sandbox and Claude responses. No keys, no network, deterministic.'
           : 'LIVE MODE: real PayPal sandbox calls and real Claude. Every money action needs policy + your approval.'}
       </div>
       <main className="layout">
+        <section className="panel" style={{ gridColumn: '1 / -1' }}>
+          <MoneyAtRisk version={version} />
+        </section>
         <section className="panel">
           <h2>Exception queue</h2>
           <div style={{ height: 420 }}>
@@ -173,6 +188,18 @@ export function ControlRoom({
             <p className="muted">
               {current ? 'No proposal yet for this exception.' : 'Select an exception.'}
             </p>
+          )}
+        </section>
+        <section className="panel">
+          <h2>Deadline radar</h2>
+          <DeadlineRadar rows={rows} now={now} />
+        </section>
+        <section className="panel">
+          <h2>Settlement trail</h2>
+          {current ? (
+            <SettlementTrail exceptionId={current.id} version={version} />
+          ) : (
+            <p className="muted">Select an exception to see its trail.</p>
           )}
         </section>
         <section className="panel" style={{ gridColumn: '1 / -1' }}>

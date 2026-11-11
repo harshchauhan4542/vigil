@@ -3,6 +3,7 @@
 // Without a licence key Studio works with a watermark.
 import { AgStudio, AgStudioProvider } from 'ag-studio-react';
 import { useMemo } from 'react';
+import { vigilHarness } from './studio/harness';
 import type { QueueRow } from './types';
 
 export function StudioPanel({ rows, licenseKey }: { rows: QueueRow[]; licenseKey: string }) {
@@ -33,7 +34,7 @@ export function StudioPanel({ rows, licenseKey }: { rows: QueueRow[]; licenseKey
   return (
     <AgStudioProvider {...(licenseKey ? { licenseKey } : {})}>
       <div style={{ height: 520 }}>
-        <AgStudio data={data} mode="edit" style={{ height: '100%' }} />
+        <AgStudio data={data} mode="edit" ai={vigilHarness} style={{ height: '100%' }} />
       </div>
     </AgStudioProvider>
   );
