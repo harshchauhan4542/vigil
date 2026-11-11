@@ -63,3 +63,10 @@ To receive real sandbox webhooks on your laptop instead of Render: install `clou
 
 - `audit_log` is append-only by trigger. On Render the app user owns the tables, so a `REVOKE UPDATE, DELETE` on the owner would not hold; the trigger is the enforcement, and `/api/audit` re-verifies the hash chain.
 - Cost guardrails: per-IP rate limits on approve/reject/agent/reset, the daily AI token budget, and policy caps ($500 per action → T3 typed confirmation; $2,000 per day).
+
+## Local Live runs: one process owns the embedded database
+
+Locally (no `DATABASE_URL`) Vigil uses PGlite in `.data/pglite`, which only one process may open
+at a time. Run `pnpm seed`, `pnpm seed:check` and `pnpm flow` **while `pnpm dev` is stopped**, or
+keep `pnpm dev` running and use `/judge` → **Run detection now** instead of `pnpm flow`.
+On Render (Postgres) there's no such limit.

@@ -4,6 +4,18 @@
 import { useEffect, useState } from 'react';
 import type { ProposalDetail } from './types';
 
+// PayPal-Mock-Response works only on Orders v2 / Payments v2 (docs/negative-testing.md).
+const MOCKABLE = new Set(['capture_authorization', 'void_authorization', 'refund']);
+const MOCK_OPTIONS = [
+  'AUTHORIZATION_EXPIRED',
+  'MAX_CAPTURE_AMOUNT_EXCEEDED',
+  'PREVIOUSLY_CAPTURED',
+  'AUTHORIZATION_VOIDED',
+  'REFUND_AMOUNT_EXCEEDED',
+  'TRANSACTION_DISPUTED',
+  'INTERNAL_SERVER_ERROR',
+];
+
 const fmt = (cents: number | null, currency: string | null) =>
   cents === null || !currency
     ? ''
@@ -18,6 +30,7 @@ export function ProposalCard({
 }) {
   const [d, setD] = useState<ProposalDetail | null>(null);
   const [typed, setTyped] = useState('');
+  const [mock, setMock] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -44,7 +57,7 @@ export function ProposalCard({
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(
         kind === 'approve'
-          ? { typed_amount: typed || undefined }
+          ? { typed_amount: typed || undefined, mock_code: mock || undefined }
           : { reason: 'Rejected in control room' },
       ),
     });
@@ -135,6 +148,22 @@ export function ProposalCard({
               value={typed}
               onChange={(e) => setTyped(e.target.value)}
             />
+          )}
+          {MOCKABLE.has(p.actionType) && (
+            <label
+              className="muted"
+              title="Sends PayPal-Mock-Response on this Orders v2 / Payments v2 call"
+            >
+              Simulate PayPal failure{' '}
+              <select value={mock} onChange={(e) => setMock(e.target.value)}>
+                <option value="">none (real call)</option>
+                {MOCK_OPTIONS.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </label>
           )}
           <button className="primary" disabled={busy} onClick={() => decide('approve')}>
             Approve

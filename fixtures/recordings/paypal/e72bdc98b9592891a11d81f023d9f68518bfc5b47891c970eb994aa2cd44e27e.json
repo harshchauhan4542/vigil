@@ -1,0 +1,17 @@
+{
+  "key": "e72bdc98b9592891a11d81f023d9f68518bfc5b47891c970eb994aa2cd44e27e",
+  "kind": "paypal",
+  "request": {
+    "method": "GET",
+    "url": "/v1/shipping/trackers?transaction_id=CAP-89",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": "{\"trackers\":[]}"
+  },
+  "recordedAt": "2026-11-02T09:01:37.619Z"
+}

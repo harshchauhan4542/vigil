@@ -1,0 +1,17 @@
+{
+  "key": "d20278947d4a5427e7f5255275a822e429b9662c54a6170d7c22733eb9db2d2f",
+  "kind": "paypal",
+  "request": {
+    "method": "GET",
+    "url": "/v1/customer/disputes?disputed_transaction_id=CAP-2004",
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": "{\"items\":[]}"
+  },
+  "recordedAt": "2026-11-02T09:01:37.262Z"
+}
