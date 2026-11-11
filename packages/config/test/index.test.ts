@@ -45,6 +45,35 @@ describe('config loaders', () => {
     expect(issues.join('\n')).toContain('ANTHROPIC_API_KEY is missing');
   });
 
+  it('with LLM_PROVIDER=openai, live needs LLM_API_KEY + LLM_BASE_URL and non-Claude models', () => {
+    const live = {
+      ...webBase,
+      VIGIL_MODE: 'live',
+      PAYPAL_CLIENT_ID: 'id',
+      PAYPAL_SECRET: 'secret',
+      LLM_PROVIDER: 'openai',
+    };
+    const issues = issuesOf(() => loadWebEnv(live)).join('\n');
+    expect(issues).toContain('LLM_API_KEY is missing');
+    expect(issues).toContain('LLM_BASE_URL is missing');
+    expect(issues).toContain('VIGIL_MODEL_INTERACTIVE is a Claude model');
+    expect(issues).not.toContain('ANTHROPIC_API_KEY');
+
+    const env = loadWebEnv({
+      ...live,
+      LLM_API_KEY: 'gsk_x',
+      LLM_BASE_URL: 'https://api.groq.com/openai/v1',
+      VIGIL_MODEL_INTERACTIVE: 'openai/gpt-oss-120b',
+      VIGIL_MODEL_BATCH: 'openai/gpt-oss-120b',
+    });
+    expect(env).toMatchObject({ LLM_PROVIDER: 'openai', LLM_MAX_OUTPUT_TOKENS: 8192 });
+    expect(() => loadWebEnv({ ...live, LLM_BASE_URL: 'hhtps//typo' })).toThrow(ConfigError);
+  });
+
+  it('defaults to Claude, so existing setups are unchanged', () => {
+    expect(loadWebEnv(webBase).LLM_PROVIDER).toBe('anthropic');
+  });
+
   it('requires and length-checks secrets', () => {
     expect(issuesOf(() => loadWebEnv({})).join('\n')).toMatch(/APPROVAL_HMAC_SECRET is missing/);
     expect(issuesOf(() => loadWebEnv({ ...webBase, SESSION_SECRET: 'short' })).join('\n')).toMatch(

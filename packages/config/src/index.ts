@@ -85,7 +85,41 @@ export const aiSchema = z.object({
     z.string().default('claude-opus-5-5'),
   ),
   AI_DAILY_TOKEN_BUDGET: positiveInt(2_000_000),
+  /** anthropic = Claude (Messages API); openai = any OpenAI-compatible API (Groq, Gemini…). */
+  LLM_PROVIDER: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.enum(['anthropic', 'openai']).default('anthropic'),
+  ),
+  LLM_BASE_URL: z.preprocess((v) => (v === '' ? undefined : v), z.url().optional()),
+  LLM_API_KEY: optionalString,
+  LLM_MAX_OUTPUT_TOKENS: positiveInt(8192),
 });
+
+/** Live mode needs a model key for the chosen provider, and model names that provider serves. */
+function requireLlmInLive(value: Record<string, unknown>, ctx: z.RefinementCtx): void {
+  if (value.VIGIL_MODE !== 'live') return;
+  const need = (key: string, why: string) => {
+    if (value[key] === undefined) ctx.addIssue({ code: 'custom', path: [key], message: why });
+  };
+  if (value.LLM_PROVIDER !== 'openai') {
+    need('ANTHROPIC_API_KEY', 'ANTHROPIC_API_KEY is missing (required when VIGIL_MODE=live)');
+    return;
+  }
+  need(
+    'LLM_API_KEY',
+    'LLM_API_KEY is missing (required when VIGIL_MODE=live and LLM_PROVIDER=openai)',
+  );
+  need('LLM_BASE_URL', 'LLM_BASE_URL is missing (required when LLM_PROVIDER=openai)');
+  for (const key of ['VIGIL_MODEL_INTERACTIVE', 'VIGIL_MODEL_BATCH']) {
+    if (String(value[key]).startsWith('claude-')) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [key],
+        message: `${key} is a Claude model; with LLM_PROVIDER=openai set it to a model your provider serves (e.g. openai/gpt-oss-120b)`,
+      });
+    }
+  }
+}
 
 export const secretsSchema = z.object({
   APPROVAL_HMAC_SECRET: optionalString,
@@ -157,7 +191,8 @@ export const webEnvSchema = paypalSchema
   .extend(secretsSchema.shape)
   .extend({ AG_STUDIO: optionalString })
   .extend(seedSchema.shape)
-  .superRefine(requireInLive(['PAYPAL_CLIENT_ID', 'PAYPAL_SECRET', 'ANTHROPIC_API_KEY']))
+  .superRefine(requireInLive(['PAYPAL_CLIENT_ID', 'PAYPAL_SECRET']))
+  .superRefine(requireLlmInLive)
   .superRefine((v, ctx) => {
     for (const key of ['APPROVAL_HMAC_SECRET', 'SESSION_SECRET']) {
       if (v[key as keyof typeof v] === undefined) {

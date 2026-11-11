@@ -1,7 +1,7 @@
 // Builds the WorkflowContext from the environment: database, PayPal client (through the
 // record/replay transport), task runner and the Claude agent for triage.
 import path from 'node:path';
-import { createClaudeClient, triageException } from '@vigil/agent';
+import { createLlmClient, triageException } from '@vigil/agent';
 import { loadWorkflowsEnv, type WorkflowsEnv } from '@vigil/config';
 import { createDb, createDbFixtureStore, type DbHandle } from '@vigil/db';
 import { createPayPalClient, createLogger } from '@vigil/paypal';
@@ -62,15 +62,8 @@ export async function bootstrap(
     logger,
   });
 
-  const claude =
-    env.VIGIL_MODE === 'replay' || env.ANTHROPIC_API_KEY
-      ? createClaudeClient({
-          mode: env.VIGIL_MODE,
-          apiKey: env.ANTHROPIC_API_KEY,
-          store,
-          record: env.RECORD,
-        })
-      : null;
+  // Claude or an OpenAI-compatible provider (LLM_PROVIDER); null in Live without a key.
+  const claude = createLlmClient(env, { mode: env.VIGIL_MODE, store, record: env.RECORD });
 
   const runner: TaskRunner =
     env.TASK_RUNNER === 'render'
