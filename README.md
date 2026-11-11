@@ -2,7 +2,7 @@
 
 **An AI money-ops control room for PayPal merchants.**
 
-Vigil watches a merchant's PayPal account for money exceptions, such as authorization holds about to lose their 3-day honor period or PayPal transactions that don't match the merchant's books, and puts them in one prioritized queue. A Claude agent investigates each exception and **proposes** a fix. A deterministic policy engine and a human approval decide what runs. Approved actions execute against PayPal with persisted `PayPal-Request-Id`s, and verified PayPal webhooks settle them.
+Vigil watches a merchant's PayPal account for money exceptions, such as authorization holds about to lose their 3-day honor period or PayPal transactions that don't match the merchant's books, and puts them in one prioritized queue. An AI agent (the open-source `gpt-oss-120b` on Groq by default, or Claude) investigates each exception and **proposes** a fix. A deterministic policy engine and a human approval decide what runs. Approved actions execute against PayPal with persisted `PayPal-Request-Id`s, and verified PayPal webhooks settle them.
 
 > Built for the PayPal AI Hackathon 2026. Runs against the PayPal **sandbox** only. MIT licensed.
 
@@ -20,7 +20,7 @@ Vigil watches a merchant's PayPal account for money exceptions, such as authoriz
 
 Money exceptions live in five different PayPal screens and in the merchant's own spreadsheet. AI agents that can call payment APIs directly have no brakes. Vigil gives the agent the investigation and keeps the money behind three locks:
 
-1. **Tier 1, agent (Claude):** reads PayPal and the books, then can only `INSERT` a DRAFT proposal with cited evidence ids. It cannot import the code that moves money (enforced by lint rules that CI tests).
+1. **Tier 1, agent (LLM):** reads PayPal and the books, then can only `INSERT` a DRAFT proposal with cited evidence ids. It cannot import the code that moves money (enforced by lint rules that CI tests).
 2. **Tier 2, gate:** re-reads the target from PayPal, runs ten deterministic rules (R1–R10: allowlist, schema, fresh state, bounds, caps, uniqueness, grounding, dispute guard, kill switch, tiering), then a human approves. Approval mints a single-use HMAC token bound to the exact parameters. Above $500 the approver must type the amount.
 3. **Tier 3, execution:** a Render Workflow verifies the token, writes the `PayPal-Request-Id` to the database **before** calling PayPal, retries only with the same id while PayPal remembers it, and otherwise decides with a GET. PayPal's signed webhook (re-verified) settles the proposal.
 
@@ -39,9 +39,9 @@ E5 (dispute deadlines) is not built.
 
 ## Judge guide
 
-**Replay mode (no keys, recommended first):** open the hosted URL (or run `pnpm demo` locally), keep the **Replay** banner on, select an exception in the queue, read the Proposal Card (policy checklist, agent rationale, evidence ids), click **Approve**, and watch the settlement trail fill in. Replay serves recorded PayPal and Claude responses from an isolated in-memory database on a frozen clock, so it is deterministic and makes no external calls. **Until real sandbox recordings are captured, the Replay data is synthetic** (recorded against Vigil's PayPal simulator and a scripted agent); the banner says so.
+**Replay mode (no keys, recommended first):** open the hosted URL (or run `pnpm demo` locally), keep the **Replay** banner on, select an exception in the queue, read the Proposal Card (policy checklist, agent rationale, evidence ids), click **Approve**, and watch the settlement trail fill in. Replay serves recorded PayPal and model responses from an isolated in-memory database on a frozen clock, so it is deterministic and makes no external calls. **Until real sandbox recordings are captured, the Replay data is synthetic** (recorded against Vigil's PayPal simulator and a scripted agent); the banner says so.
 
-**Live mode:** click **Switch to Live**. Everything now hits the PayPal sandbox and Claude for real. Ask the agent about an exception, approve a capture, and the row settles when PayPal's webhook arrives. Try:
+**Live mode:** click **Switch to Live**. Everything now hits the PayPal sandbox and the configured model (`LLM_PROVIDER`) for real. Ask the agent about an exception, approve a capture, and the row settles when PayPal's webhook arrives. Try:
 
 - Approve the same proposal in two tabs: one execution, one PayPal effect.
 - The $612 hold is above the $500 cap: the card asks you to type `612.00`.
@@ -71,7 +71,7 @@ pnpm db:migrate
 pnpm dev                       # http://localhost:3000/control-room  (Replay by default)
 ```
 
-Live mode (your own PayPal sandbox app and Anthropic key in `.env`, `VIGIL_MODE=live`):
+Live mode (your own PayPal sandbox app plus a model key in `.env`, `VIGIL_MODE=live`; a free Groq key works with `LLM_PROVIDER=openai`, `LLM_BASE_URL=https://api.groq.com/openai/v1`, `LLM_API_KEY=…` and both `VIGIL_MODEL_*` set to `openai/gpt-oss-120b`):
 
 ```bash
 pnpm paypal:smoke              # token + create/read one sandbox order
@@ -90,7 +90,7 @@ Quality gate (run by CI on every pull request): `pnpm lint && pnpm typecheck && 
 ```mermaid
 flowchart LR
   subgraph T1[Tier 1 · propose]
-    A[Claude agent\nsonnet-5 interactive · opus-5-5 batch]
+    A[LLM agent\ngpt-oss-120b on Groq · or Claude]
   end
   subgraph T2[Tier 2 · decide]
     G[Gate: fresh PayPal state\n+ policy R1–R10]
@@ -113,11 +113,11 @@ flowchart LR
 | `packages/core`      | money as integer cents, enums, state machines, Zod schemas, canonical JSON + params hash                                               |
 | `packages/detectors` | pure E3/E4 detectors and scoring                                                                                                       |
 | `packages/policy`    | pure policy R1–R10, approval tokens                                                                                                    |
-| `packages/agent`     | Claude tool loop, read/propose tools, untrusted wrapping, quarantined PayPal toolkit adapter                                           |
+| `packages/agent`     | LLM tool loop (Claude or OpenAI-compatible), read/propose tools, untrusted wrapping, quarantined PayPal toolkit adapter                |
 | `packages/gate`      | Tier 2: fresh state, policy evaluation, approve/reject, webhook receiver                                                               |
 | `packages/paypal`    | token cache, HTTP client, error mapping, idempotency, reads, **actions** (only importable from `apps/workflows`), webhook verification |
 | `packages/db`        | Drizzle schema (PGlite locally, Postgres on Render), repositories, append-only hash-chained audit log                                  |
-| `packages/replay`    | record/replay `fetch` transport for PayPal and Claude, with scrubbing                                                                  |
+| `packages/replay`    | record/replay `fetch` transport for PayPal and the LLM, with scrubbing                                                                 |
 | `packages/tasks`     | task runner (inline locally, Render Workflows in production)                                                                           |
 | `apps/workflows`     | Render tasks: detect, triage, execute, settle, process webhook, reconcile, reseed                                                      |
 | `apps/web`           | Next.js control room + API routes                                                                                                      |
@@ -128,11 +128,13 @@ The trust boundaries are ESLint rules with their own test suite (`tooling/eslint
 
 AI models and services used **by the product**:
 
-- **Claude (Anthropic API, `@anthropic-ai/sdk`)**: `claude-sonnet-5` for the interactive agent (`/api/agent/stream`), `claude-opus-5-5` for batch triage of each new exception. Strict tool definitions, `tool_choice: auto`, adaptive thinking, prompt caching on a frozen system prompt. The agent only reads and drafts proposals.
+- **Open-source LLM: OpenAI `gpt-oss-120b` (open weights) served by Groq** through its OpenAI-compatible API, for the interactive agent (`/api/agent/stream`) and batch triage of each new exception (`LLM_PROVIDER=openai`; adapter in `packages/agent/src/openai-compat.ts`). Any OpenAI-compatible endpoint works the same way.
+- **Claude (Anthropic API, `@anthropic-ai/sdk`)**: supported as the alternative provider (`LLM_PROVIDER=anthropic`: `claude-sonnet-5` interactive, `claude-opus-5-5` batch, strict tools, adaptive thinking, prompt caching). The synthetic Replay world is recorded in Claude's message format with a scripted agent.
+- Whatever the model, the agent only reads and drafts proposals; the deterministic policy engine and a human approval decide what runs.
 - **PayPal REST APIs (sandbox)**: Orders v2 (create, authorize, capture, track), Payments v2 (authorizations get/capture/reauthorize/void, captures get/refund, refunds get), Subscriptions v1 + Catalog Products v1 (seeding, reads), Transaction Search v1, Shipment Tracking v1 (reads), Invoicing v2 and Disputes v1 (reads), Webhooks v1 (`verify-webhook-signature`) plus self-verification of the signature.
 - **`@paypal/paypal-server-sdk` 2.5.0** (APIMatic-generated): configured to share Vigil's token cache; Vigil's own calls go through one raw HTTP client so logging, error mapping and replay sit in one place ([spike S1](docs/spikes.md)).
 - **`@paypal/agent-toolkit` 1.11.0**: wrapped as read-only Claude tools in one quarantined file (`packages/agent/src/toolkit-adapter.ts`, tested), but **not enabled** in the hosted agent: Vigil's own read tools cover the same data through the replayable client.
-- **AG Grid 36.2 (Community)** for the exception queue and audit log; **AG Studio 3.0** for analytics, with its built-in AI agents running on **Claude `claude-sonnet-5`** through Vigil's `/api/ai` adapter and a custom **Vigil Ops** agent (delegated to from Studio's lead agent) that streams Vigil's own Claude loop.
+- **AG Grid 36.2 (Community)** for the exception queue and audit log; **AG Studio 3.0** for analytics, with its built-in AI agents running on the configured LLM (`VIGIL_MODEL_INTERACTIVE`) through Vigil's `/api/ai` adapter and a custom **Vigil Ops** agent (delegated to from Studio's lead agent) that streams Vigil's own agent loop.
 - **Render**: web service, Workflows (durable execution), Postgres, Key Value, cron.
 
 Tools used **to build** it: **Claude Code** (Anthropic) was used to write and test the code in this repository. _(Update this line if you also used the PayPal AI-Toolkit or APIMatic Context plugins in Claude Code.)_

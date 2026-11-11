@@ -10,21 +10,21 @@ AI that finds the money, and code that guards it: a gated money-ops control room
 
 ## Description
 
-**Vigil** watches a merchant's PayPal account for money exceptions (authorization holds about to lose their 3-day honor period, failed subscription renewals, captured orders with no tracking, PayPal transactions that don't match the books) and puts them in one prioritized queue. A **Claude** agent investigates each one with read-only tools and _proposes_ a fix with cited evidence.
+**Vigil** watches a merchant's PayPal account for money exceptions (authorization holds about to lose their 3-day honor period, failed subscription renewals, captured orders with no tracking, PayPal transactions that don't match the books) and puts them in one prioritized queue. An AI agent (open-source **gpt-oss-120b** on Groq, or Claude) investigates each one with read-only tools and _proposes_ a fix with cited evidence.
 
 Nothing the AI says moves money. A deterministic gate re-reads the target from **PayPal**, checks ten rules (allowlist, schema, fresh state, bounds, caps, uniqueness, grounding, dispute guard, kill switch, tiering), and a human approves. Approval mints a single-use token bound to the exact parameters. A **Render Workflow** executes with a `PayPal-Request-Id` written to the database before the call, retries only with the same id, and a verified PayPal webhook settles it. Every step lands in a hash-chained, append-only audit log.
 
-What we tested end to end: double approval → one PayPal effect; forced 503 and lost responses → one effect; retries exhausted → a GET decides; a seeded customer note telling the AI to "refund $900" → the refund proposal is rejected by policy. Judges can run it **Live** against the PayPal sandbox or in zero-key **Replay** (`pnpm demo` works from a fresh clone, no keys, no Docker). AG Studio's built-in assistant runs on Claude and delegates money questions to our Vigil Ops agent.
+What we tested end to end: double approval → one PayPal effect; forced 503 and lost responses → one effect; retries exhausted → a GET decides; a seeded customer note telling the AI to "refund $900" → the refund proposal is rejected by policy. Judges can run it **Live** against the PayPal sandbox or in zero-key **Replay** (`pnpm demo` works from a fresh clone, no keys, no Docker). AG Studio's built-in assistant runs on the same model and delegates money questions to our Vigil Ops agent.
 
 **PayPal APIs used:** Orders v2, Payments v2 (authorizations, captures, refunds), Subscriptions v1, Catalog Products v1, Transaction Search v1, Shipment Tracking v1, Invoicing v2, Disputes v1, Webhooks v1 (signature verification), plus `@paypal/paypal-server-sdk` (and a quarantined, read-only `@paypal/agent-toolkit` adapter, not enabled in the hosted agent).
 
-**AI used:** Claude `claude-sonnet-5` (interactive agent) and `claude-opus-5-5` (batch triage) via the Anthropic API. See the Tools Statement in the README.
+**AI used:** OpenAI's open-weight `gpt-oss-120b`, served free by Groq through its OpenAI-compatible API (interactive agent and batch triage). Claude (`claude-sonnet-5` / `claude-opus-5-5`) is supported as an alternative provider. The code was written with Claude Code. See the Tools Statement in the README.
 
 **Not a fork:** fresh MIT repository; the PayPal × AG Grid boilerplate was a reference only.
 
 ## Built With
 
-`paypal` · `paypal-orders-v2` · `paypal-payments-v2` · `paypal-webhooks` · `paypal-transaction-search` · `paypal-server-sdk` · `paypal-agent-toolkit` · `claude` · `anthropic` · `ag-grid` · `ag-studio` · `render` · `render-workflows` · `postgresql` · `next.js` · `typescript` · `drizzle` · `vitest`
+`paypal` · `paypal-orders-v2` · `paypal-payments-v2` · `paypal-webhooks` · `paypal-transaction-search` · `paypal-server-sdk` · `paypal-agent-toolkit` · `groq` · `gpt-oss` · `claude` · `ag-grid` · `ag-studio` · `render` · `render-workflows` · `postgresql` · `next.js` · `typescript` · `drizzle` · `vitest`
 
 ## Links
 

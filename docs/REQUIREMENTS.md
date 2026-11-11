@@ -41,6 +41,8 @@ Billing, Invoicing, Disputes (read). If Transaction Search is off, Vigil still r
 | `APPROVAL_HMAC_SECRET` | random, ≥ 32 characters                               | Generate (command below)             |
 | `SESSION_SECRET`       | random, ≥ 32 characters, different from the one above | Generate (command below)             |
 
+**Free alternative to Anthropic:** instead of `ANTHROPIC_API_KEY`, use a free Groq key: `LLM_PROVIDER=openai`, `LLM_BASE_URL=https://api.groq.com/openai/v1`, `LLM_API_KEY=gsk_…` (console.groq.com → API Keys), and set both `VIGIL_MODEL_INTERACTIVE` and `VIGIL_MODEL_BATCH` to `openai/gpt-oss-120b`.
+
 Generate a secret:
 
 ```bash

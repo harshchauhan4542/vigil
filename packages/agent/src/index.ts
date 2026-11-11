@@ -2,6 +2,7 @@
 // The quarantined toolkit adapter is exported from "@vigil/agent/toolkit" only.
 export * from './client.js';
 export * from './loop.js';
+export * from './openai-compat.js';
 export * from './system-prompt.js';
 export * from './tool.js';
 export * from './tools-propose.js';

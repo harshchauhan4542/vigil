@@ -38,7 +38,7 @@ Node 22 · TypeScript strict ESM · pnpm workspaces + Turborepo · Next.js 16 + 
 
 - **One step per session** unless the user says otherwise. Work on branch `step-NN-short-name`.
 - A step is done only when `pnpm lint && pnpm typecheck && pnpm test && pnpm build` pass, plus the step's "Done when" checks. Report failures honestly with output.
-- Commit at the end of a step (message ends with the Co-Authored-By line). Push or open a PR only if the user asks.
+- Commit at the end of a step. Do **not** add a `Co-Authored-By: Claude` line or a "Generated with Claude Code" line to commits or PRs (the owner asked for Claude not to appear as a GitHub contributor; `.claude/settings.json` sets `attribution` to empty). Push or open a PR only if the user asks.
 - Stop after the step and wait for the user's review. Don't start the next step on your own.
 - Keep replies short. Don't paste large file contents back into chat.
 

@@ -2,10 +2,10 @@
 
 _Keep this file short. Claude updates it at the end of every session._
 
-**Last updated:** 2026-11-02
-**Current step:** All 21 steps (0–20) are coded; stacked PRs #1–#21 with CI (incl. Playwright e2e from Step 19).
-**State:** Everything that can be built and tested without your accounts is done and green, including a zero-key Replay demo (`pnpm demo`, currently synthetic data). Live checks, the deploy, real recordings, the video and the Devpost submission are waiting on you.
-**Next action:** You: merge PRs in order, add keys, follow docs/deploy.md and docs/final-checklist.md. Me (when asked): run the live checks (Steps 3–5, 9–11, 16, 18), record real fixtures, fix anything the sandbox surfaces.
+**Last updated:** 2026-11-11
+**Current step:** All steps merged to `main`. Live setup in progress: PayPal sandbox ✅, free LLM (Groq `gpt-oss-120b`) wired on branch `llm-provider`.
+**State:** All checks + e2e green. PayPal smoke passed live. Next: seed the sandbox and do the first full Live run.
+**Next action:** `pnpm seed` (twice) + `pnpm seed:check`, approve any buyer links, then `pnpm dev` → /judge → Run detection now → approve one exception. Then deploy, video, Devpost.
 
 ## Blockers
 
@@ -77,3 +77,5 @@ Legend: ☐ not started · 🟡 in progress · ✅ done · ❌ blocked
 | 2026-11-02 | 18       | 🟡 Claude adapter for Studio agents, Vigil Ops agent, delegation harness                              | [2026-11-02-step-18-studio-agent.md](2026-11-02-step-18-studio-agent.md)   |
 | 2026-11-02 | 19       | ✅ Zero-key Replay world, Playwright e2e in CI, pnpm demo, security scan, Postman                     | [2026-11-02-step-19-hardening.md](2026-11-02-step-19-hardening.md)         |
 | 2026-11-02 | 20       | 🟡 Final README, Devpost draft, final + keep-alive checklist                                          | [2026-11-02-step-20-final.md](2026-11-02-step-20-final.md)                 |
+| 2026-11-11 | LLM      | ✅ Merged PRs #10–#22; PayPal live smoke; Groq gpt-oss-120b provider; dev loads root .env             | [2026-11-11-llm-provider.md](2026-11-11-llm-provider.md)                   |
+| 2026-11-11 | UI       | ✅ Merchant-friendly redesign, light + dark themes, dev/Demo fixes, no Claude attribution             | [2026-11-11-llm-provider.md](2026-11-11-llm-provider.md)                   |
