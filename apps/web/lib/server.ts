@@ -4,7 +4,7 @@
 // the in-process runner comes from ./inline-runner.ts, the single file allowed to load workflows.
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { createClaudeClient } from '@vigil/agent';
+import { createLlmClient } from '@vigil/agent';
 import { ConfigError, loadWebEnv, type WebEnv } from '@vigil/config';
 import type { VigilMode } from '@vigil/core';
 import { createDb, createDbFixtureStore, type Db } from '@vigil/db';
@@ -19,7 +19,7 @@ import {
 } from '@vigil/replay';
 import { RenderTaskRunner, type TaskRunner } from '@vigil/tasks';
 
-type ClaudeClient = ReturnType<typeof createClaudeClient>;
+type ClaudeClient = NonNullable<ReturnType<typeof createLlmClient>>;
 
 export interface Server {
   mode: VigilMode;
@@ -122,15 +122,8 @@ async function buildCore(env: WebEnv, mode: VigilMode): Promise<Core> {
     }),
     logger: createLogger(env.LOG_LEVEL),
   });
-  const claude =
-    mode === 'replay' || env.ANTHROPIC_API_KEY
-      ? createClaudeClient({
-          mode,
-          apiKey: env.ANTHROPIC_API_KEY,
-          store,
-          record: mode === 'live' && env.RECORD,
-        })
-      : null;
+  // Claude or an OpenAI-compatible provider (LLM_PROVIDER); null in Live without a key.
+  const claude = createLlmClient(env, { mode, store, record: mode === 'live' && env.RECORD });
   const demoNow = mode === 'replay' ? readDemoNow(root) : null;
   return {
     db: handle.db,
