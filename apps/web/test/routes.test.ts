@@ -56,6 +56,7 @@ beforeEach(async () => {
     claude: null,
     store: new MemoryFixtureStore(),
     policy: POLICY_V1,
+    now: () => new Date(),
   };
   server = assemble(env, 'live', core, createInlineRunner(core, env, 'live', true));
   setServerForTests(server);
@@ -288,6 +289,7 @@ describe('/api/ai (Claude behind Studio built-in agents)', () => {
     expect(claude.requests[0]).toMatchObject({
       model: 'claude-sonnet-5',
       tool_choice: { type: 'any' },
+      thinking: { type: 'disabled' },
       system: 'Build dashboards',
     });
   });

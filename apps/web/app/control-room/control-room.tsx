@@ -41,15 +41,22 @@ const CODES: Record<string, string> = {
 export function ControlRoom({
   mode,
   fallbackReason,
+  replaySynthetic,
+  serverNow,
   studioLicense,
 }: {
+  /** The server's clock (frozen in Replay); countdowns follow it, not the browser's. */
+  serverNow: string;
   mode: 'live' | 'replay';
   fallbackReason: string | null;
+  replaySynthetic: boolean;
   studioLicense: string;
 }) {
   const [rows, setRows] = useState<QueueRow[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
-  const [now, setNow] = useState(() => Date.now());
+  // Offset between the server clock (frozen demo clock in Replay) and this browser.
+  const [offset] = useState(() => Date.parse(serverNow) - Date.now());
+  const [now, setNow] = useState(() => Date.now() + offset);
   const [lastEvent, setLastEvent] = useState<string>('');
   const [version, setVersion] = useState(0);
 
@@ -67,12 +74,12 @@ export function ControlRoom({
       setVersion((v) => v + 1);
       void load();
     });
-    const t = setInterval(() => setNow(Date.now()), 30_000);
+    const t = setInterval(() => setNow(Date.now() + offset), 30_000);
     return () => {
       es.close();
       clearInterval(t);
     };
-  }, [load]);
+  }, [load, offset]);
 
   const columns = useMemo<ColDef<QueueRow>[]>(
     () => [
@@ -146,7 +153,9 @@ export function ControlRoom({
           ? `Live is unavailable (${fallbackReason}), so you are seeing Replay. `
           : ''}
         {mode === 'replay'
-          ? 'REPLAY MODE: recorded PayPal sandbox and Claude responses. No keys, no network, deterministic.'
+          ? replaySynthetic
+            ? "REPLAY MODE: recorded responses from Vigil's PayPal simulator and a scripted agent (synthetic demo data). No keys, no network, deterministic."
+            : 'REPLAY MODE: recorded PayPal sandbox and Claude responses. No keys, no network, deterministic.'
           : 'LIVE MODE: real PayPal sandbox calls and real Claude. Every money action needs policy + your approval.'}
       </div>
       <main className="layout">

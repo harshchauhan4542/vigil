@@ -1,0 +1,23 @@
+{
+  "key": "08f0b7e4b1edc2abdf3cd0c79aaa48f7a7c83dd74d7090879c994a0a0518c01f",
+  "kind": "paypal",
+  "request": {
+    "method": "POST",
+    "url": "/v2/payments/authorizations/AUTH-612/capture",
+    "body": {
+      "amount": {
+        "currency_code": "USD",
+        "value": "612.00"
+      },
+      "final_capture": true
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": "{\"id\":\"CAP-102\",\"status\":\"COMPLETED\",\"amount\":{\"currency_code\":\"USD\",\"value\":\"612.00\"},\"final_capture\":true,\"supplementary_data\":{\"related_ids\":{\"authorization_id\":\"AUTH-612\"}}}"
+  },
+  "recordedAt": "2026-11-02T09:01:37.561Z"
+}

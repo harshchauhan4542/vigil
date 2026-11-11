@@ -2,6 +2,7 @@
 // the record/replay transport), the task runner and the gate. One instance per mode, per process.
 // Never imports the money-moving actions; with TASK_RUNNER=inline (local dev) or in Replay mode
 // the in-process runner comes from ./inline-runner.ts, the single file allowed to load workflows.
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { createClaudeClient } from '@vigil/agent';
 import { ConfigError, loadWebEnv, type WebEnv } from '@vigil/config';
@@ -36,6 +37,8 @@ export interface Server {
 }
 
 export interface Core {
+  /** Frozen demo clock in Replay; the real clock in Live. */
+  now: () => Date;
   db: Db;
   http: PayPalHttp;
   claude: ClaudeClient | null;
@@ -69,11 +72,35 @@ export function policyFromEnv(env: WebEnv): PolicyConfig {
   };
 }
 
+export interface ReplayInfo {
+  recordedAt: string;
+  /** true = generated against Vigil's PayPal simulator, not the real sandbox. */
+  synthetic: boolean;
+}
+
+/** fixtures/demo/manifest.json: the clock the recordings were made at, and their origin. */
+export function readReplayInfo(root = repoRoot()): ReplayInfo | null {
+  try {
+    const m = JSON.parse(
+      readFileSync(path.join(root, 'fixtures', 'demo', 'manifest.json'), 'utf8'),
+    ) as Partial<ReplayInfo>;
+    return m.recordedAt ? { recordedAt: m.recordedAt, synthetic: m.synthetic !== false } : null;
+  } catch {
+    return null;
+  }
+}
+
+function readDemoNow(root: string): Date | null {
+  const info = readReplayInfo(root);
+  return info ? new Date(info.recordedAt) : null;
+}
+
 async function buildCore(env: WebEnv, mode: VigilMode): Promise<Core> {
   const root = repoRoot();
+  // Replay is an isolated world: its own in-memory database, never the Live one.
   const handle = await createDb({
-    databaseUrl: env.DATABASE_URL,
-    pgliteDir: path.resolve(root, env.PGLITE_DIR),
+    databaseUrl: mode === 'live' ? env.DATABASE_URL : undefined,
+    pgliteDir: mode === 'live' ? path.resolve(root, env.PGLITE_DIR) : 'memory://',
     migrationsDir: path.resolve(root, 'packages/db/migrations'),
   });
   await handle.migrate();
@@ -104,7 +131,15 @@ async function buildCore(env: WebEnv, mode: VigilMode): Promise<Core> {
           record: mode === 'live' && env.RECORD,
         })
       : null;
-  return { db: handle.db, http, claude, store, policy: policyFromEnv(env) };
+  const demoNow = mode === 'replay' ? readDemoNow(root) : null;
+  return {
+    db: handle.db,
+    http,
+    claude,
+    store,
+    policy: policyFromEnv(env),
+    now: () => demoNow ?? new Date(),
+  };
 }
 
 /** Env validated for a specific mode (Live requires keys; Replay doesn't). */
@@ -124,7 +159,10 @@ async function build(mode: VigilMode): Promise<Server> {
   const runner: TaskRunner =
     env.TASK_RUNNER === 'render' && mode === 'live'
       ? new RenderTaskRunner({ apiKey: env.RENDER_API_KEY ?? '' })
-      : (await import('./inline-runner')).createInlineRunner(core, env, mode);
+      : (await import('./inline-runner')).createInlineRunner(core, env, mode, mode === 'replay');
+  if (mode === 'replay') {
+    await (await import('./inline-runner')).prepareReplay(core, runner, repoRoot());
+  }
   return assemble(env, mode, core, runner);
 }
 
@@ -141,6 +179,7 @@ export function assemble(env: WebEnv, mode: VigilMode, core: Core, runner: TaskR
       approvalSecret: env.APPROVAL_HMAC_SECRET!,
       executionEnabled: env.EXECUTION_ENABLED,
       policy: core.policy,
+      now: core.now,
     },
     webhooks: {
       db: core.db,
