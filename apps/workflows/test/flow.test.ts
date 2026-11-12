@@ -124,6 +124,20 @@ async function toPendingApproval(ctx: WorkflowContext, runner: InlineTaskRunner)
   return { ex: ex!, p: p! };
 }
 
+describe('AI review fails', () => {
+  it('escalates the exception to the merchant instead of leaving it in TRIAGING', async () => {
+    await seedHold();
+    const { runner } = makeCtx(captureScript('48.00'), {
+      triage: async () => {
+        throw new Error('LLM API error 400: tool call validation failed');
+      },
+    });
+    await runner.start('detect_exceptions', []);
+    const [ex] = await listExceptions(env.handle.db);
+    expect(ex?.status).toBe('ESCALATED');
+  });
+});
+
 describe('exception → proposal → policy → approve → execute', () => {
   it('runs end to end with one PayPal capture, request id persisted before the call', async () => {
     await seedHold();

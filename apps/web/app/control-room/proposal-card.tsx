@@ -54,6 +54,22 @@ const AFTER: Record<string, { text: string; tone: string }> = {
   NEEDS_RECONCILE: { text: 'Vigil is double-checking with PayPal what happened.', tone: 'wait' },
 };
 
+/** Fixes that only change Vigil's own records never reach PayPal: say so, don't claim PayPal. */
+const internalDone = (text: string) => ({
+  APPROVED: { text: 'Approved. Vigil is updating its records.', tone: 'ok' },
+  QUEUED: { text: 'Approved. Vigil is updating its records.', tone: 'ok' },
+  EXECUTING: { text: 'Vigil is updating its records.', tone: 'ok' },
+  SUCCEEDED: { text, tone: 'ok' },
+  SETTLED: { text, tone: 'ok' },
+});
+const INTERNAL_AFTER: Record<string, Record<string, { text: string; tone: string }>> = {
+  journal_entry: internalDone(
+    'Done. Vigil added this to your records. Nothing was sent to PayPal, so there is nothing to see there.',
+  ),
+  dismiss: internalDone('Done. Vigil closed this problem. Nothing was sent to PayPal.'),
+};
+export const INTERNAL_ACTIONS = new Set(Object.keys(INTERNAL_AFTER));
+
 export function ProposalCard({
   proposalId,
   onChanged,
@@ -84,7 +100,7 @@ export function ProposalCard({
   const [statusLabel, statusTone] = proposalStatus(p.status);
   const failedRules = policy?.rules.filter((r) => r.status === 'fail') ?? [];
   const passed = policy?.rules.filter((r) => r.status === 'pass').length ?? 0;
-  const after = AFTER[p.status];
+  const after = (INTERNAL_AFTER[p.actionType]?.[p.status] ?? null) || AFTER[p.status];
   const amountText = ((p.amountCents ?? 0) / 100).toFixed(2);
 
   async function decide(kind: 'approve' | 'reject') {

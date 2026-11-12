@@ -161,14 +161,27 @@ const STATE_WORDS: Record<string, string> = {
   FAILED: 'Fix failed',
   REJECTED: 'Fix rejected',
   EXPIRED: 'Fix expired',
+  DISMISSED: 'Closed without a change',
+  OPEN: 'The problem came back',
+};
+
+/** Fixes that only change Vigil's own records: these steps never involve PayPal. */
+const INTERNAL_STATE_WORDS: Record<string, string> = {
+  EXECUTING: 'Vigil updated its records',
+  SUCCEEDED: 'Records updated',
+  AWAITING_SETTLEMENT: 'Records updated',
+  SETTLED: 'Done (nothing sent to PayPal)',
 };
 
 export function SettlementTrail({
   exceptionId,
   version,
+  internal = false,
 }: {
   exceptionId: string;
   version: number;
+  /** The fix only changes Vigil's records (no PayPal call). */
+  internal?: boolean;
 }) {
   const [rows, setRows] = useState<TrailRow[]>([]);
   useEffect(() => {
@@ -184,7 +197,11 @@ export function SettlementTrail({
         const to = typeof r.payload?.to === 'string' ? r.payload.to : null;
         const label =
           LABEL[r.action] ??
-          (to ? (STATE_WORDS[to] ?? `${r.action.split('.')[0]} → ${to}`) : r.action);
+          (to
+            ? ((internal ? INTERNAL_STATE_WORDS[to] : undefined) ??
+              STATE_WORDS[to] ??
+              `${r.action.split('.')[0]} → ${to}`)
+            : r.action);
         return (
           <li key={r.seq}>
             <strong>{label}</strong>

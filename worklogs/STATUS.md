@@ -80,3 +80,4 @@ Legend: ☐ not started · 🟡 in progress · ✅ done · ❌ blocked
 | 2026-11-11 | LLM      | ✅ Merged PRs #10–#22; PayPal live smoke; Groq gpt-oss-120b provider; dev loads root .env             | [2026-11-11-llm-provider.md](2026-11-11-llm-provider.md)                   |
 | 2026-11-11 | UI       | ✅ Merchant-friendly redesign, light + dark themes, dev/Demo fixes, no Claude attribution             | [2026-11-11-llm-provider.md](2026-11-11-llm-provider.md)                   |
 | 2026-11-12 | Seed     | ✅ US sandbox shop + Vigil US app, seeded (4 holds, 4 sales, 3 subs), detector timing checked         | [2026-11-11-remaining-todo.md](2026-11-11-remaining-todo.md)               |
+| 2026-11-12 | Fixes    | ✅ E4 same-day bookings, AI rate limit + stuck triage, honest wording, trend charts + Studio overview | [2026-11-11-remaining-todo.md](2026-11-11-remaining-todo.md)               |

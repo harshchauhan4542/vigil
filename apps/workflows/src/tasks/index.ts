@@ -56,7 +56,17 @@ export async function triageTask(ctx: WorkflowContext, exceptionId: string) {
     return { exceptionId, escalated: true, proposals: [] };
   }
 
-  const run = await ctx.triage(exceptionId);
+  let run: Awaited<ReturnType<NonNullable<WorkflowContext['triage']>>>;
+  try {
+    run = await ctx.triage(exceptionId);
+  } catch (error) {
+    // An AI failure (rate limit, malformed tool call, outage) must not leave the exception stuck
+    // in TRIAGING where nobody sees it: hand it to the merchant instead.
+    const reason = `AI review failed: ${(error as Error).message}`.slice(0, 300);
+    await advanceException(ctx.db, exceptionId, 'ESCALATED', actor('triage'), { reason });
+    ctx.log('triage.failed', { exceptionId, reason });
+    return { exceptionId, escalated: true, proposals: [] };
+  }
   const results = [];
   for (const proposalId of run.proposalIds) {
     const policy = await evaluateDraft(gateDeps(ctx), proposalId);

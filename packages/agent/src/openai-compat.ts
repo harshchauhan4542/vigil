@@ -212,11 +212,14 @@ export function fromOpenAIResponse(res: OaiResponse, model: string): Anthropic.M
 
 const RETRY_STATUS = new Set([429, 500, 502, 503, 504]);
 const MAX_ATTEMPTS = 4;
+// Free tiers (e.g. Groq: 8,000 tokens/minute) refill within a minute, so rate limits get more
+// patience than server errors.
+const MAX_RATE_LIMIT_ATTEMPTS = 8;
 
 function retryDelayMs(res: Response, attempt: number): number {
   const header = Number(res.headers.get('retry-after'));
   const ms = Number.isFinite(header) && header > 0 ? header * 1000 : 2 ** attempt * 1000;
-  return Math.min(ms, 30_000);
+  return Math.min(ms, res.status === 429 ? 60_000 : 30_000);
 }
 
 /** The subset of the Anthropic client Vigil uses (`messages.stream` / `messages.create`). */
@@ -235,9 +238,20 @@ export function createOpenAICompatClient(options: OpenAICompatClientOptions): An
   const url = `${options.baseURL.replace(/\/+$/, '')}/chat/completions`;
   const sleep = options.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
   // Replay must be deterministic: never retry into a different fixture occurrence.
-  const attempts = options.mode === 'replay' ? 1 : MAX_ATTEMPTS;
+  const live = options.mode !== 'replay';
+  // One request at a time in Live: a detection sweep can triage many exceptions at once, and
+  // parallel calls blow through a small tokens-per-minute limit together.
+  let queue: Promise<unknown> = Promise.resolve();
+  const oneAtATime = <T>(run: () => Promise<T>): Promise<T> => {
+    if (!live) return run();
+    const next = queue.then(run, run);
+    queue = next.catch(() => undefined);
+    return next;
+  };
 
-  async function complete(params: Params): Promise<Anthropic.Message> {
+  const complete = (params: Params) => oneAtATime(() => send(params));
+
+  async function send(params: Params): Promise<Anthropic.Message> {
     const body = JSON.stringify(toOpenAIRequest(params, options.maxOutputTokens));
     for (let attempt = 1; ; attempt++) {
       const res = await transport(url, {
@@ -257,6 +271,7 @@ export function createOpenAICompatClient(options: OpenAICompatClientOptions): An
       // Groq returns 400 tool_use_failed when the model emitted a malformed tool call; a fresh
       // sample usually succeeds. Rate limits and server errors wait for retry-after.
       const retryable = RETRY_STATUS.has(res.status) || code === 'tool_use_failed';
+      const attempts = !live ? 1 : res.status === 429 ? MAX_RATE_LIMIT_ATTEMPTS : MAX_ATTEMPTS;
       if (retryable && attempt < attempts) {
         await sleep(retryDelayMs(res, attempt));
         continue;

@@ -116,3 +116,22 @@ Follow `docs/deploy.md` (sections 0–5). Type secrets only into the Render dash
 - [ ] Delete the old `step-*` branches on GitHub. They still have the old commit messages.
 - [ ] Delete the local backup branch `backup/main-before-rewrite` once you're happy.
 - [ ] Record real Live replay fixtures (`RECORD=true`, see `docs/deploy.md` §5) if you want Demo mode to replay real sandbox data instead of the built-in test data.
+
+## 2026-11-12: Live testing fixes and dashboard charts
+
+Testing Live with real sandbox data found three bugs. All three are fixed, and each has a test that fails on the old code:
+
+- **False "missing in books" alerts (E4).** The books were cut off at the 3-hour lag window, so today's bookings were never compared and every same-day sale was flagged. Now every booking is matched, and only the ledger-side verdicts ("missing in PayPal", "duplicate") wait out the lag (`apps/workflows/src/sync/detect.ts`).
+- **Groq free tier (8,000 tokens/min) rejected parallel AI reviews with 429.** The OpenAI-compatible client now sends one request at a time in Live, and gives rate limits up to 8 tries of up to 60 s each (`packages/agent/src/openai-compat.ts`).
+- **A failed AI review left the exception stuck in TRIAGING.** It is now ESCALATED ("Needs your attention"), with the reason recorded (`apps/workflows/src/tasks/index.ts`).
+
+UI changes:
+
+- **Honest wording for records-only fixes.** A records-only fix (journal entry) or a dismissal no longer says "PayPal confirmed"; the card and trail say nothing was sent to PayPal.
+- **Trend charts above the problems table** (AG Charts, MIT): problems found vs. fixed, money at risk over time, and money coming due over the next 7 days. They follow the page clock, so Demo works too.
+- **Ready-made AG Studio overview** (4 headline numbers + 2 charts):
+  - plain field names and dollar formatting;
+  - editing panels collapsed;
+  - the merchant's own charts are saved in the browser, with a "Reset to the standard charts" button.
+
+Local clean-up (no code): the 14 false alerts were moved to DISMISSED and the stuck one to ESCALATED, both through the state machines, so the audit log records them.

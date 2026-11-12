@@ -71,6 +71,9 @@ importers:
       '@vigil/workflows':
         specifier: workspace:*
         version: link:../workflows
+      ag-charts-community:
+        specifier: 14.2.0
+        version: 14.2.0
       ag-grid-community:
         specifier: 36.2.0
         version: 36.2.0
