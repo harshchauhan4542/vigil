@@ -24,14 +24,14 @@ export function MoneyAtRisk({ version }: { version: number }) {
   const fixed = s?.recovered.reduce((n, r) => n + r.count, 0) ?? 0;
   return (
     <>
-      <div>
+      <div className="kpi kpi-balance">
         <div className="figure-label">Money at risk</div>
         <div className="figure risk">{sum(s?.atRisk)}</div>
         <div className="figure-sub">
           across {open} open {open === 1 ? 'problem' : 'problems'}
         </div>
       </div>
-      <div>
+      <div className="kpi">
         <div className="figure-label">Recovered this week</div>
         <div className="figure saved">{sum(s?.recovered)}</div>
         <div className="figure-sub">
