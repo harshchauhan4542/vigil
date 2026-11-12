@@ -291,8 +291,8 @@ export function ControlRoom({
             <div>
               <h2>Charts and questions</h2>
               <p className="muted">
-                Your key numbers and charts, ready to read. Change them, add your own by dragging
-                fields, or ask the assistant a question about your problems (powered by AG Studio).
+                Your space to make your own charts, or ask the assistant a question about your
+                problems (powered by AG Studio). The main charts are at the top of the page.
               </p>
             </div>
           </div>

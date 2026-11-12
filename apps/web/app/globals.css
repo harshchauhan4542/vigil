@@ -857,9 +857,15 @@ label.mock {
 /* Trend charts band above the problems table */
 .trends {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 16px;
   margin: 0 0 20px;
+}
+.trends > .trend-chart {
+  grid-column: span 2;
+}
+.trends > .trend-chart.wide {
+  grid-column: span 3;
 }
 .trend-chart {
   height: 260px;
@@ -871,6 +877,10 @@ label.mock {
 @media (max-width: 1000px) {
   .trends {
     grid-template-columns: 1fr;
+  }
+  .trends > .trend-chart,
+  .trends > .trend-chart.wide {
+    grid-column: auto;
   }
 }
 
