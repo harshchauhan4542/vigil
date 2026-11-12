@@ -75,6 +75,14 @@ export class RedisCache implements KvCache {
 /** Redis when a URL is given, memory otherwise. */
 export async function createCache(redisUrl?: string): Promise<KvCache> {
   if (!redisUrl) return new MemoryCache();
-  const { Redis } = await import('ioredis');
-  return new RedisCache(new Redis(redisUrl, { lazyConnect: false, maxRetriesPerRequest: 2 }));
+  // In the Next.js server bundle ioredis loads as an external ES import of a CommonJS module, where
+  // the named export can be missing; fall back to the default export (the Redis class).
+  const mod = (await import('ioredis')) as unknown as {
+    Redis?: typeof Redis;
+    default?: typeof Redis | { Redis?: typeof Redis };
+  };
+  const RedisClass =
+    mod.Redis ?? (typeof mod.default === 'function' ? mod.default : mod.default?.Redis);
+  if (!RedisClass) throw new Error('ioredis could not be loaded');
+  return new RedisCache(new RedisClass(redisUrl, { lazyConnect: false, maxRetriesPerRequest: 2 }));
 }

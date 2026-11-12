@@ -1,5 +1,6 @@
 // Driver switch: PGlite (embedded Postgres) locally and in tests, node-postgres on Render.
 // A postgres:// DATABASE_URL selects `pg`; anything else uses PGlite.
+import type { Pool as PgPool } from 'pg';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -41,7 +42,14 @@ const isPostgresUrl = (url: string | undefined): url is string =>
 
 export async function createDb(options: CreateDbOptions = {}): Promise<DbHandle> {
   if (isPostgresUrl(options.databaseUrl)) {
-    const { Pool } = await import('pg');
+    // pg is CommonJS; loaded as an external ES import its named exports can be missing, so
+    // fall back to the default export.
+    const pg = (await import('pg')) as unknown as {
+      Pool?: typeof PgPool;
+      default?: { Pool?: typeof PgPool };
+    };
+    const Pool = pg.Pool ?? pg.default?.Pool;
+    if (!Pool) throw new Error('pg could not be loaded');
     const { drizzle } = await import('drizzle-orm/node-postgres');
     const { migrate } = await import('drizzle-orm/node-postgres/migrator');
     const pool = new Pool({ connectionString: options.databaseUrl, max: 10 });
