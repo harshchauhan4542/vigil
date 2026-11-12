@@ -29,6 +29,13 @@
       "when": 1793598256869,
       "tag": "0003_exception_score",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794504948954,
+      "tag": "0004_app_settings",
+      "breakpoints": true
     }
   ]
 }

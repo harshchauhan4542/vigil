@@ -354,3 +354,13 @@ export const customerNotes = pgTable(
   },
   (t) => [index('customer_notes_external_ref_idx').on(t.externalRef)],
 );
+
+/**
+ * Small key/value settings saved from the web app (e.g. the merchant's PayPal sandbox app).
+ * Secret values are stored encrypted by the web app; this table never sees plaintext secrets.
+ */
+export const appSettings = pgTable('app_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updatedAt: tsz('updated_at').notNull().defaultNow(),
+});

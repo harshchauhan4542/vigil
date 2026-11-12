@@ -1,64 +1,65 @@
-/* Vigil theme (v3): "morning mist". A soft, low-glare light theme that is easy on the eyes:
-   no pure white, no near-black, gentle accents, and a light mint band at the top.
-   Light by default; a dark option is below. */
+/* Vigil theme (v4): "ink & marigold". The colours of a merchant's ledger: deep indigo ink for
+   text and actions, marigold for "due soon", brick red for money at risk, on a soft
+   lavender-grey paper. Low glare: no pure white, no pure black. Light by default. */
 :root {
-  --paper: #edf1ee;
-  --surface: #f9fbf8;
-  --surface-2: #f2f6f3;
-  --ink: #2b3a40;
-  --muted: #627378;
-  --line: #d6dfda;
-  --teal: #2a7a72;
-  --teal-soft: #ddede9;
-  --amber: #9a6410;
-  --amber-soft: #f6ebd6;
-  --red: #a8463b;
-  --red-soft: #f6e2de;
-  --neutral-soft: #e6ece8;
-  --hover: #eef4f1;
-  --selected: #ddede9;
-  --focus: #2a7a72;
+  --paper: #f0eff5;
+  --surface: #f9f8fc;
+  --surface-2: #f2f1f8;
+  --ink: #26254a;
+  --muted: #64638a;
+  --line: #dcdaea;
+  /* "teal" is the historical name of the primary accent (now indigo ink). */
+  --teal: #4b44b8;
+  --teal-soft: #e6e4f7;
+  --amber: #8f5605;
+  --amber-soft: #f8ebd2;
+  --red: #b0403a;
+  --red-soft: #f7e1df;
+  --neutral-soft: #e9e8f2;
+  --hover: #efeef8;
+  --selected: #e6e4f7;
+  --focus: #4b44b8;
   --on-teal: #ffffff;
-  --band: #dfeae5;
-  --band-ink: #22343a;
-  --band-muted: #5b6f74;
-  --band-line: #c2d2cb;
-  --band-red: #a8463b;
-  --band-teal: #2a7a72;
-  --band-amber: #9a6410;
-  --band-hover: rgb(34 52 58 / 0.06);
-  --band-active: rgb(34 52 58 / 0.1);
+  --band: #e5e3f4;
+  --band-ink: #24234a;
+  --band-muted: #5d5c84;
+  --band-line: #cbc8e5;
+  --band-red: #b0403a;
+  --band-teal: #4b44b8;
+  --band-amber: #8f5605;
+  --band-hover: rgb(36 35 74 / 0.06);
+  --band-active: rgb(36 35 74 / 0.1);
   --sans: var(--font-sans), system-ui, 'Segoe UI', sans-serif;
   --mono: var(--font-mono), ui-monospace, Consolas, monospace;
   color-scheme: light;
 }
-/* Dark ("evening mist"): deep slate, never pure black; soft text, never pure white.
+/* Dark ("indigo night"): deep indigo, never pure black; soft lavender text, never pure white.
    Chosen with the sun/moon button in the top bar and remembered per browser. */
 :root[data-theme='dark'] {
-  --paper: #161d1f;
-  --surface: #1c2528;
-  --surface-2: #212c30;
-  --ink: #dce5e2;
-  --muted: #97a8ab;
-  --line: #2c3a3f;
-  --teal: #5db8ad;
-  --teal-soft: #1e3a37;
-  --amber: #d9a54e;
-  --amber-soft: #3a2f1a;
-  --red: #e08a7e;
-  --red-soft: #3d2421;
-  --neutral-soft: #263236;
-  --hover: #222e32;
-  --selected: #1e3a37;
-  --focus: #5db8ad;
-  --on-teal: #0f2421;
-  --band: #1f2b2e;
-  --band-ink: #e1eae7;
-  --band-muted: #9db0b2;
-  --band-line: #33454a;
-  --band-red: #e08a7e;
-  --band-teal: #5db8ad;
-  --band-amber: #d9a54e;
+  --paper: #15152a;
+  --surface: #1c1b35;
+  --surface-2: #22213f;
+  --ink: #e4e3f4;
+  --muted: #a3a2c6;
+  --line: #302f54;
+  --teal: #a39df2;
+  --teal-soft: #2c2958;
+  --amber: #e9b152;
+  --amber-soft: #3b2f17;
+  --red: #ee8f83;
+  --red-soft: #402327;
+  --neutral-soft: #27264b;
+  --hover: #242343;
+  --selected: #2c2958;
+  --focus: #a39df2;
+  --on-teal: #15152a;
+  --band: #1e1d3a;
+  --band-ink: #e7e6f7;
+  --band-muted: #a6a5ca;
+  --band-line: #35345e;
+  --band-red: #ee8f83;
+  --band-teal: #a39df2;
+  --band-amber: #e9b152;
   --band-hover: rgb(255 255 255 / 0.06);
   --band-active: rgb(255 255 255 / 0.1);
   color-scheme: dark;
@@ -219,7 +220,7 @@ select {
 .mode-switch button[aria-pressed='true'] {
   background: var(--surface);
   color: var(--ink);
-  box-shadow: 0 1px 2px rgb(43 58 64 / 0.1);
+  box-shadow: 0 1px 2px rgb(36 35 74 / 0.1);
 }
 .mode-note {
   padding: 8px 24px;
@@ -308,6 +309,13 @@ select {
   position: relative;
   height: 112px;
   border-left: 1px solid var(--band-line);
+}
+/* Phones: up to four lanes of short labels. */
+.strip.compact {
+  height: 138px;
+}
+.strip.compact .strip-mark {
+  font-size: 12px;
 }
 .strip-axis {
   position: absolute;
@@ -887,4 +895,46 @@ label.mock {
 .trends-loading {
   height: 260px;
   margin-bottom: 20px;
+}
+
+/* Settings: Connect PayPal form */
+.settings-form {
+  display: grid;
+  gap: 16px;
+  max-width: 560px;
+}
+.settings-form label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+}
+.settings-form label .muted {
+  font-weight: 400;
+  font-size: 13px;
+}
+.settings-form input {
+  width: 100%;
+}
+.settings-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* AG Studio box: never wider than the page; scrolls sideways inside on small screens. */
+.studio-frame {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.studio-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Grid children must be allowed to shrink, or wide content (tables, Studio) widens the page. */
+.workspace > * {
+  min-width: 0;
 }

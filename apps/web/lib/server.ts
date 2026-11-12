@@ -7,7 +7,14 @@ import path from 'node:path';
 import { createLlmClient } from '@vigil/agent';
 import { ConfigError, loadWebEnv, type WebEnv } from '@vigil/config';
 import type { VigilMode } from '@vigil/core';
-import { createDb, createDbFixtureStore, type Db } from '@vigil/db';
+import {
+  createDb,
+  createDbFixtureStore,
+  deleteSetting,
+  getSetting,
+  putSetting,
+  type Db,
+} from '@vigil/db';
 import type { GateDeps, ReceiveDeps } from '@vigil/gate';
 import { CertCache, createLogger, createPayPalClient, type PayPalHttp } from '@vigil/paypal';
 import { POLICY_V1, type PolicyConfig } from '@vigil/policy';
@@ -34,6 +41,8 @@ export interface Server {
   gate: GateDeps;
   webhooks: ReceiveDeps;
   store: FixtureStore;
+  /** Releases the database (PGlite allows one open instance per directory). */
+  close?: () => Promise<void>;
 }
 
 export interface Core {
@@ -44,6 +53,7 @@ export interface Core {
   claude: ClaudeClient | null;
   store: FixtureStore;
   policy: PolicyConfig;
+  close?: () => Promise<void>;
 }
 
 const g = globalThis as unknown as {
@@ -132,12 +142,13 @@ async function buildCore(env: WebEnv, mode: VigilMode): Promise<Core> {
     store,
     policy: policyFromEnv(env),
     now: () => demoNow ?? new Date(),
+    close: () => handle.close(),
   };
 }
 
 /** Env validated for a specific mode (Live requires keys; Replay doesn't). */
-export function envFor(mode: VigilMode): WebEnv {
-  if (mode === 'live') return loadWebEnv({ ...process.env, VIGIL_MODE: mode });
+export function envFor(mode: VigilMode, overrides: Record<string, string> = {}): WebEnv {
+  if (mode === 'live') return loadWebEnv({ ...process.env, ...overrides, VIGIL_MODE: mode });
   // Replay serves the recorded world, which was recorded with the default (Claude) provider
   // and model names. The model is part of each recording's key, so a Live model choice in
   // .env (e.g. Groq's gpt-oss-120b) must not leak into Replay.
@@ -156,7 +167,8 @@ export function defaultMode(): VigilMode {
 }
 
 async function build(mode: VigilMode): Promise<Server> {
-  const env = envFor(mode);
+  // PayPal keys saved on the Settings page take precedence over the environment.
+  const env = envFor(mode, mode === 'live' ? await savedPayPalEnv() : {});
   const core = await buildCore(env, mode);
   // Replay never reaches the network, so it always runs in-process.
   const runner: TaskRunner =
@@ -227,4 +239,77 @@ export async function getServer(mode?: VigilMode): Promise<Server> {
     });
   }
   return s;
+}
+
+// ---------------------------------------------------------------------------------------------
+// PayPal keys saved from the Settings page (encrypted in `app_settings`, Live database only).
+
+export const PAYPAL_SETTING = 'paypal';
+
+export interface SavedPayPal {
+  clientId: string;
+  secret: string;
+  webhookId?: string;
+  savedAt: string;
+}
+
+/** Run `fn` against the Live database: the running Live server's, or a short-lived handle. */
+export async function withLiveDb<T>(fn: (db: Db) => Promise<T>): Promise<T> {
+  const cached = g.__vigilServers?.get('live');
+  if (cached) {
+    const srv = await cached.catch(() => null);
+    if (srv && !srv.fallback) return fn(srv.db);
+  }
+  const handle = await createDb({
+    databaseUrl: process.env.DATABASE_URL,
+    pgliteDir: path.resolve(repoRoot(), process.env.PGLITE_DIR || '.data/pglite'),
+    migrationsDir: path.resolve(repoRoot(), 'packages/db/migrations'),
+  });
+  try {
+    await handle.migrate();
+    return await fn(handle.db);
+  } finally {
+    await handle.close();
+  }
+}
+
+export async function readSavedPayPal(): Promise<SavedPayPal | null> {
+  const { unseal } = await import('./secret-box');
+  const sealed = await withLiveDb((db) => getSetting(db, PAYPAL_SETTING));
+  return sealed ? unseal<SavedPayPal>(sealed, process.env.SESSION_SECRET) : null;
+}
+
+async function savedPayPalEnv(): Promise<Record<string, string>> {
+  try {
+    const saved = await readSavedPayPal();
+    if (!saved) return {};
+    return {
+      PAYPAL_CLIENT_ID: saved.clientId,
+      PAYPAL_SECRET: saved.secret,
+      ...(saved.webhookId ? { PAYPAL_WEBHOOK_ID: saved.webhookId } : {}),
+    };
+  } catch {
+    return {}; // no database yet, or unreadable: fall back to the environment
+  }
+}
+
+/** Stop the Live server so the next request rebuilds it (e.g. after new keys were saved). */
+export async function restartLive(): Promise<void> {
+  const cached = g.__vigilServers?.get('live');
+  g.__vigilServers?.delete('live');
+  if (!cached) return;
+  const srv = await cached.catch(() => null);
+  await srv?.close?.().catch(() => undefined);
+}
+
+export async function savePayPal(value: SavedPayPal): Promise<void> {
+  const { seal } = await import('./secret-box');
+  const sealed = seal(value, process.env.SESSION_SECRET);
+  await restartLive();
+  await withLiveDb((db) => putSetting(db, PAYPAL_SETTING, sealed));
+}
+
+export async function clearPayPal(): Promise<void> {
+  await restartLive();
+  await withLiveDb((db) => deleteSetting(db, PAYPAL_SETTING));
 }
