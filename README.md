@@ -7,7 +7,7 @@ Vigil watches a merchant's PayPal account for money exceptions, such as authoriz
 > Built for the PayPal AI Hackathon 2026. Runs against the PayPal **sandbox** only. MIT licensed.
 
 - **Run it with zero keys (2 commands, no accounts, no Docker):** `pnpm install && pnpm demo` → http://localhost:3000/control-room. Full steps in [Run it locally](#run-it-locally).
-- **Hosted demo:** _link added after deployment_ (Render, see [docs/deploy.md](docs/deploy.md))
+- **Hosted demo:** https://vigil-web-vxpb.onrender.com/control-room (Render; use the **Demo / Live** switch top right)
 
 ![Vigil control room](docs/screenshots/control-room.png)
 
