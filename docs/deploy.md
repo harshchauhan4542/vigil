@@ -11,8 +11,8 @@ Render dashboard only; they never go into git or chat.
 ## 1. Blueprint (web, Postgres, Key Value, crons, shared env group)
 
 1. Render dashboard → **New → Blueprint** → pick the `vigil` repo → branch `main`.
-2. Render reads `render.yaml` and shows: `vigil-db` (Postgres 16), `vigil-kv` (Key Value), `vigil-web`, `vigil-detect` (every 15 min), `vigil-nightly-reseed` (02:30 UTC = 08:00 IST), and the env group **`vigil-shared`**.
-3. When asked for the `sync: false` values, paste: `PAYPAL_CLIENT_ID`, `PAYPAL_SECRET`, `ANTHROPIC_API_KEY`, `AG_STUDIO` (optional). Leave `PAYPAL_WEBHOOK_ID` and `RENDER_API_KEY` empty for now (steps 3 and 4).
+2. Render reads `render.yaml` and shows: `vigil-db` (Postgres 16), `vigil-web` (Standard, 2 GB), `vigil-detect` (every 15 min), `vigil-nightly-reseed` (02:30 UTC = 08:00 IST), and the env group **`vigil-shared`**.
+3. When asked for the `sync: false` values, paste: `PAYPAL_CLIENT_ID`, `PAYPAL_SECRET`, `LLM_API_KEY` (your free Groq key), `AG_STUDIO` (optional). Leave `ANTHROPIC_API_KEY` empty unless you switch to Claude. Leave `PAYPAL_WEBHOOK_ID` and `RENDER_API_KEY` empty for now (steps 3 and 4).
 4. **Apply**. `APPROVAL_HMAC_SECRET` and `SESSION_SECRET` are generated once, in the group, so every service shares them (the web app mints approval tokens; the workflow service verifies them).
 5. Wait for `vigil-web` to go live. Open `https://<your-web>.onrender.com/api/health`: you'll see `"mode":"replay"` with a `fallback` reason until all Live settings are in place. That's expected.
 
@@ -26,7 +26,7 @@ Render Workflows can't be declared in a Blueprint yet.
 2. **Name: `vigil-workflows`** (the web app starts tasks as `vigil-workflows/<task>`).
 3. Runtime Node. **Build command:** `npm install -g pnpm@10.34.9 && pnpm install --frozen-lockfile && pnpm turbo run build --filter=@vigil/workflows`
 4. **Start command:** `node apps/workflows/dist/worker.js`
-5. **Environment:** link the **`vigil-shared`** group, then add `DATABASE_URL` (copy the _Internal_ connection string from `vigil-db`) and `REDIS_URL` (Internal URL from `vigil-kv`).
+5. **Environment:** link the **`vigil-shared`** group, then add `DATABASE_URL` (copy the _Internal_ connection string from `vigil-db`). No `REDIS_URL` is needed: Vigil uses an in-memory token cache.
 6. Create. The worker registers 7 tasks: `detect_exceptions`, `triage_exception`, `execute_proposal`, `settle_check`, `process_webhook`, `reconcile_window`, `reseed_demo`.
 
 ## 3. Render API key (so web + cron can start tasks)
