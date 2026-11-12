@@ -2,11 +2,11 @@
    text and actions, marigold for "due soon", brick red for money at risk, on a soft
    lavender-grey paper. Low glare: no pure white, no pure black. Light by default. */
 :root {
-  --paper: #f0eff5;
+  --paper: #d6e3fa;
   --surface: #f9f8fc;
   --surface-2: #f2f1f8;
   --ink: #26254a;
-  --muted: #64638a;
+  --muted: #55547c;
   --line: #dcdaea;
   /* "teal" is the historical name of the primary accent (now indigo ink). */
   --teal: #4b44b8;
@@ -36,7 +36,7 @@
 /* Dark ("indigo night"): deep indigo, never pure black; soft lavender text, never pure white.
    Chosen with the sun/moon button in the top bar and remembered per browser. */
 :root[data-theme='dark'] {
-  --paper: #15152a;
+  --paper: #0f1c3d;
   --surface: #1c1b35;
   --surface-2: #22213f;
   --ink: #e4e3f4;
