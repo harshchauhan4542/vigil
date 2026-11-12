@@ -2,14 +2,14 @@
 
 _Keep this file short. Claude updates it at the end of every session._
 
-**Last updated:** 2026-11-11
-**Current step:** All steps merged to `main`. Live setup in progress: PayPal sandbox ✅, free LLM (Groq `gpt-oss-120b`) wired on branch `llm-provider`.
-**State:** All checks + e2e green. PayPal smoke passed live. Next: seed the sandbox and do the first full Live run.
-**Next action:** `pnpm seed` (twice) + `pnpm seed:check`, approve any buyer links, then `pnpm dev` → /judge → Run detection now → approve one exception. Then deploy, video, Devpost.
+**Last updated:** 2026-11-12
+**Current step:** All steps merged to `main`. Live setup: PayPal sandbox (US shop) ✅, sandbox seeded ✅, free LLM (Groq `gpt-oss-120b`) ✅.
+**State:** All checks + e2e green. Seed done in the US sandbox shop; detector timing verified on real data. Waiting for PayPal to activate Transaction Search on the Vigil US app (E4).
+**Next action:** Render deploy (with Groq env vars), then video and Devpost. See [2026-11-11-remaining-todo.md](2026-11-11-remaining-todo.md).
 
 ## Blockers
 
-- Live sandbox checks for Steps 3–5 need `PAYPAL_CLIENT_ID` / `PAYPAL_SECRET` in `vigil/.env` (user to add; never paste keys in chat).
+- None. (Transaction Search on the new app may take a while to activate; until then E4 is skipped.)
 
 ## Open to-dos for the user
 
@@ -79,3 +79,4 @@ Legend: ☐ not started · 🟡 in progress · ✅ done · ❌ blocked
 | 2026-11-02 | 20       | 🟡 Final README, Devpost draft, final + keep-alive checklist                                          | [2026-11-02-step-20-final.md](2026-11-02-step-20-final.md)                 |
 | 2026-11-11 | LLM      | ✅ Merged PRs #10–#22; PayPal live smoke; Groq gpt-oss-120b provider; dev loads root .env             | [2026-11-11-llm-provider.md](2026-11-11-llm-provider.md)                   |
 | 2026-11-11 | UI       | ✅ Merchant-friendly redesign, light + dark themes, dev/Demo fixes, no Claude attribution             | [2026-11-11-llm-provider.md](2026-11-11-llm-provider.md)                   |
+| 2026-11-12 | Seed     | ✅ US sandbox shop + Vigil US app, seeded (4 holds, 4 sales, 3 subs), detector timing checked         | [2026-11-11-remaining-todo.md](2026-11-11-remaining-todo.md)               |
