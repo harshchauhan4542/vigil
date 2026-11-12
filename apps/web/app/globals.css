@@ -1127,3 +1127,48 @@ label.mock {
     grid-template-columns: 1fr;
   }
 }
+
+/* Problems table: banking-style rows */
+.cell-problem {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 12px;
+  height: 100%;
+  min-width: 0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.cell-problem > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.problem-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  flex: none;
+}
+.problem-icon.warn {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+.problem-icon.info {
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+.problem-icon.risk {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.problem-icon.neutral {
+  background: var(--neutral-soft);
+  color: var(--muted);
+}
+.ag-cell.cell-amount {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
