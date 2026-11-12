@@ -306,6 +306,52 @@ describe('OpenAI-compatible client', () => {
     expect(m.content).toEqual([{ type: 'text', text: 'ok', citations: null }]);
   });
 
+  it('sends one request at a time, so parallel triages share a small rate limit', async () => {
+    let inFlight = 0;
+    let peak = 0;
+    server.use(
+      http.post(`${LLM}/chat/completions`, async () => {
+        peak = Math.max(peak, ++inFlight);
+        await new Promise((r) => setTimeout(r, 20));
+        inFlight--;
+        return HttpResponse.json(reply({ content: 'ok' }));
+      }),
+    );
+    const c = client();
+    const ask = () =>
+      c.messages.create({
+        model: MODEL,
+        max_tokens: 10,
+        messages: [{ role: 'user', content: 'hi' }],
+      });
+    const all = await Promise.all([ask(), ask(), ask()]);
+    expect(all).toHaveLength(3);
+    expect(peak).toBe(1);
+  });
+
+  it('keeps waiting through repeated rate limits', async () => {
+    let n = 0;
+    server.use(
+      http.post(`${LLM}/chat/completions`, () =>
+        ++n < 6
+          ? HttpResponse.json(
+              { error: { message: 'Rate limit reached', code: 'rate_limit_exceeded' } },
+              { status: 429, headers: { 'retry-after': '90' } },
+            )
+          : HttpResponse.json(reply({ content: 'ok' })),
+      ),
+    );
+    const waits: number[] = [];
+    const m = await client({ sleep: async (ms) => void waits.push(ms) }).messages.create({
+      model: MODEL,
+      max_tokens: 10,
+      messages: [{ role: 'user', content: 'hi' }],
+    });
+    expect(n).toBe(6);
+    expect(waits).toEqual([60_000, 60_000, 60_000, 60_000, 60_000]);
+    expect(m.content).toEqual([{ type: 'text', text: 'ok', citations: null }]);
+  });
+
   it('fails with a clear error that never contains the key', async () => {
     server.use(
       http.post(`${LLM}/chat/completions`, () =>

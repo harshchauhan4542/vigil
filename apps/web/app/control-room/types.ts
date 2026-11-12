@@ -7,6 +7,8 @@ export interface QueueRow {
   severity: number;
   score: number;
   deadlineAt: string | null;
+  detectedAt: string | null;
+  resolvedAt: string | null;
   status: string;
   latestProposal: {
     id: string;

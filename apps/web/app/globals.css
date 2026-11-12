@@ -842,3 +842,39 @@ label.mock {
 .theme-toggle:hover:not(:disabled) {
   color: var(--ink);
 }
+
+/* Charts and questions: note + reset button above the dashboard */
+.studio-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+/* Trend charts band above the problems table */
+.trends {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0 0 20px;
+}
+.trend-chart {
+  height: 260px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+@media (max-width: 1000px) {
+  .trends {
+    grid-template-columns: 1fr;
+  }
+}
+
+.trends-loading {
+  height: 260px;
+  margin-bottom: 20px;
+}

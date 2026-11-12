@@ -138,18 +138,30 @@ export async function detectExceptions(options: DetectOptions): Promise<DetectSu
   await syncCaptures(db, http);
   const transactionsSynced = await syncTransactions(db, http, start, now);
 
-  // Judge the books only inside the window, keeping the ±2-day tolerance away from its edges.
+  // Match PayPal items against every booking in the window, including today's (and the ±2-day
+  // tolerance ahead), so a sale booked today is not reported as "missing in books". Only the
+  // ledger-side verdicts ("missing in PayPal", "duplicate") wait out the Transaction Search lag.
   const e4Enabled = transactionsSynced !== null;
+  const judgeLedgerBefore = isoDay(ledgerEnd);
   const ledger = e4Enabled
-    ? await listLedgerBetween(db, isoDay(new Date(start.getTime() + 2 * DAY)), isoDay(ledgerEnd))
+    ? await listLedgerBetween(
+        db,
+        isoDay(new Date(start.getTime() + 2 * DAY)),
+        isoDay(new Date(now.getTime() + 3 * DAY)),
+      )
     : [];
-  const { exceptions, ledgerMatches } = detectAll({
+  const bookedOn = new Map(ledger.map((l) => [`ledger:${l.id}`, l.bookedOn]));
+  const { exceptions: found, ledgerMatches } = detectAll({
     authorizations: await listAuthorizations(db),
     transactions: e4Enabled ? await listTransactionsBetween(db, start, now) : [],
     ledger,
     subscriptions: await listSubscriptions(db),
     captures: await listCapturesForDetection(db),
     now,
+  });
+  const exceptions = found.filter((e) => {
+    const day = bookedOn.get(e.targetRef);
+    return day === undefined || day < judgeLedgerBefore;
   });
 
   const summary: DetectSummary = {

@@ -10,11 +10,16 @@ import { vigilGridTheme } from '../ui/grid-theme';
 import { actionLabel, exceptionStatus, money, problemLabel, proposalStatus } from '../ui/labels';
 import { Pill } from '../ui/pill';
 import { TopBar } from '../ui/top-bar';
-import { ProposalCard } from './proposal-card';
+import { INTERNAL_ACTIONS, ProposalCard } from './proposal-card';
 import type { QueueRow } from './types';
 import { DeadlineStrip, MoneyAtRisk, SettlementTrail } from './widgets';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
+
+const TrendCharts = dynamic(() => import('./trend-charts').then((m) => m.TrendCharts), {
+  ssr: false,
+  loading: () => <div className="trends-loading" />,
+});
 
 const StudioPanel = dynamic(() => import('./studio-panel').then((m) => m.StudioPanel), {
   ssr: false,
@@ -201,6 +206,9 @@ export function ControlRoom({
       </section>
 
       <main className="workspace">
+        <div className="wide">
+          <TrendCharts rows={rows} now={now} />
+        </div>
         <section className="panel wide">
           <div className="panel-head">
             <div>
@@ -269,7 +277,13 @@ export function ControlRoom({
               </p>
             </div>
           </div>
-          {current && <SettlementTrail exceptionId={current.id} version={version} />}
+          {current && (
+            <SettlementTrail
+              exceptionId={current.id}
+              version={version}
+              internal={INTERNAL_ACTIONS.has(current.latestProposal?.actionType ?? '')}
+            />
+          )}
         </section>
 
         <section className="panel wide">
@@ -277,8 +291,8 @@ export function ControlRoom({
             <div>
               <h2>Charts and questions</h2>
               <p className="muted">
-                Drag fields to build a chart, or ask the assistant a question about your problems
-                (powered by AG Studio).
+                Your key numbers and charts, ready to read. Change them, add your own by dragging
+                fields, or ask the assistant a question about your problems (powered by AG Studio).
               </p>
             </div>
           </div>

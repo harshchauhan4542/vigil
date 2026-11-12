@@ -102,6 +102,39 @@ describe('detectExceptions', () => {
   });
 });
 
+describe('books booked today', () => {
+  it('matches a sale booked today, and holds back a fresh booking with no PayPal item', async () => {
+    const { fake, handle } = env;
+    // Sold and booked today: must match, not be "missing in books".
+    fake.addTransaction('TX-TODAY', 4200, hoursAgo(5), { invoice_id: 'INV-T' });
+    await insertLedgerEntries(handle.db, [
+      {
+        id: '00000000-0000-4000-8000-000000000011',
+        source: 'books',
+        externalRef: 'INV-T',
+        amountCents: 4200,
+        currency: 'USD',
+        bookedOn: '2026-11-05',
+        memo: 'Sale INV-T',
+      },
+      // Booked today with nothing in PayPal yet: too new to call "missing in PayPal".
+      {
+        id: '00000000-0000-4000-8000-000000000012',
+        source: 'books',
+        externalRef: 'INV-LAG',
+        amountCents: 1000,
+        currency: 'USD',
+        bookedOn: '2026-11-05',
+        memo: 'Sale INV-LAG',
+      },
+    ]);
+    const s = await detectExceptions({ db: handle.db, http: env.http, now: NOW });
+    expect(s.detected).toBe(0);
+    const ledger = await listLedgerEntries(handle.db);
+    expect(ledger.find((l) => l.externalRef === 'INV-T')?.matchedTxnId).toBe('TX-TODAY');
+  });
+});
+
 describe('Transaction Search not enabled on the PayPal app', () => {
   it('skips E4 (no false "missing in PayPal") but still detects E3', async () => {
     const { http: mswHttp, HttpResponse } = await import('msw');
