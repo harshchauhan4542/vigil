@@ -1,6 +1,6 @@
 'use client';
 // W1 Money-at-Risk, W2 Deadline strip (next 72 hours), W4 Settlement Trail.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ACTOR, money, problemLabel } from '../ui/labels';
 import type { QueueRow } from './types';
 
@@ -61,14 +61,31 @@ export function DeadlineStrip({
     .map((r) => ({ ...r, h: (Date.parse(r.deadlineAt!) - now) / 3_600_000 }))
     .sort((a, b) => a.h - b.h);
 
-  // Stack marks into lanes so nearby labels never overlap.
-  const laneEnd: number[] = [];
+  // Measure the strip so label spacing follows the real width (phones vs. laptops).
+  const stripRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(900);
+  useEffect(() => {
+    const el = stripRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => e && setWidth(e.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [marks.length > 0]);
+  const compact = width < 520; // phones: amount only, the time left is in the tooltip
+  const labelPx = compact ? 84 : 150;
+  const span = Math.min(0.95, labelPx / Math.max(width, 1));
+
+  // Stack marks into lanes so labels never overlap. A label near the right edge grows
+  // leftwards, so it occupies [pos - span, pos]; otherwise [pos, pos + span].
+  const lanes: [number, number][][] = [];
   const placed = marks.map((m) => {
     const pos = Math.min(Math.max(m.h, 0), HORIZON_H) / HORIZON_H;
-    let lane = laneEnd.findIndex((end) => pos > end);
-    if (lane === -1) lane = Math.min(laneEnd.length, 2);
-    laneEnd[lane] = pos + 0.22;
-    return { ...m, pos, lane };
+    const flip = pos > 1 - span;
+    const box: [number, number] = flip ? [pos - span, pos] : [pos, pos + span];
+    let lane = lanes.findIndex((l) => l.every(([a, b]) => box[1] < a || box[0] > b));
+    if (lane === -1) lane = Math.min(lanes.length, 3);
+    (lanes[lane] ??= []).push(box);
+    return { ...m, pos, lane, flip };
   });
 
   return (
@@ -80,7 +97,7 @@ export function DeadlineStrip({
       {marks.length === 0 ? (
         <p className="strip-empty">Nothing is on the clock. New deadlines show up here.</p>
       ) : (
-        <div className="strip">
+        <div className={compact ? 'strip compact' : 'strip'} ref={stripRef}>
           <div className="strip-axis" />
           {[0, 12, 24, 48, 72].map((t) => (
             <span key={t} className="strip-tick" style={{ left: `${(t / HORIZON_H) * 100}%` }}>
@@ -89,7 +106,7 @@ export function DeadlineStrip({
           ))}
           {placed.map((m) => {
             const cls = m.h <= 0 ? 'bad' : m.h <= 12 ? 'warn' : 'ok';
-            const flip = m.pos > 0.75;
+            const flip = m.flip;
             const when =
               m.h <= 0
                 ? `overdue ${Math.abs(m.h).toFixed(0)}h`
@@ -109,12 +126,12 @@ export function DeadlineStrip({
                     : {}),
                 }}
                 aria-pressed={selected === m.id}
-                title={`${problemLabel(m.type)}: ${m.targetRef}`}
+                title={`${problemLabel(m.type)}: ${m.targetRef} (${when})`}
                 onClick={() => onSelect(m.id)}
               >
                 {!flip && <span className="pin" />}
                 {money(m.amountAtRiskCents, m.currency)}
-                <span className="when">{when}</span>
+                {!compact && <span className="when">{when}</span>}
                 {flip && <span className="pin" />}
               </button>
             );

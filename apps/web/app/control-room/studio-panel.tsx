@@ -3,7 +3,7 @@
 // Without a licence key Studio works with a watermark.
 import { studioTheme, type AgReportState } from 'ag-studio';
 import { AgStudio, AgStudioProvider } from 'ag-studio-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { actionLabel, exceptionStatus, problemLabel, proposalStatus } from '../ui/labels';
 import { vigilHarness } from './studio/harness';
 import type { QueueRow } from './types';
@@ -36,12 +36,13 @@ function muteLicenceBanner() {
 }
 
 const CLOSED = new Set(['RESOLVED', 'DISMISSED']);
-const SAVED_KEY = 'vigil-my-charts-v1';
+const SAVED_KEY = 'vigil-my-charts-v2';
 
 /** A blank page: the ready-made charts live above the table, this canvas is the merchant's own. */
 const BLANK_DASHBOARD = {
   selectedPageId: 'my-charts',
-  pages: [{ id: 'my-charts', layout: { columns: 12, rowHeight: 40 } }],
+  // A small minimum width so saved charts fit a phone screen in view mode.
+  pages: [{ id: 'my-charts', layout: { columns: 12, rowHeight: 40, minWidth: 320 } }],
 } as unknown as AgReportState;
 
 const USD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
@@ -70,6 +71,19 @@ const FIELDS = [
   text('deadline', 'Deadline'),
 ];
 
+/** True on phone-sized screens, where Studio's editor (≈1,000 px of panels) can't fit. */
+function useNarrow(maxWidth = 760): boolean {
+  const query = `(max-width: ${maxWidth}px)`;
+  const [narrow, setNarrow] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const on = () => setNarrow(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, [query]);
+  return narrow;
+}
+
 function savedDashboard(): AgReportState | null {
   try {
     const raw = window.localStorage.getItem(SAVED_KEY);
@@ -83,6 +97,10 @@ export function StudioPanel({ rows, licenseKey }: { rows: QueueRow[]; licenseKey
   if (!licenseKey) muteLicenceBanner();
   // Bumping this remounts Studio, which re-reads initialState (used by "clear").
   const [generation, setGeneration] = useState(0);
+  // Phones get view mode (the saved charts, full width); the editor is one tap away.
+  const narrow = useNarrow();
+  const [editOnPhone, setEditOnPhone] = useState(false);
+  const editing = !narrow || editOnPhone;
   const initialState = useMemo(
     () => (generation === 0 ? savedDashboard() : null) ?? BLANK_DASHBOARD,
     [generation],
@@ -132,40 +150,59 @@ export function StudioPanel({ rows, licenseKey }: { rows: QueueRow[]; licenseKey
     <AgStudioProvider {...(licenseKey ? { licenseKey } : {})}>
       <div className="studio-tools">
         <span className="muted">
-          Build your own chart: drag a field from <strong>Data</strong> onto the canvas, or pick a
-          chart type in <strong>Compose</strong>. Your charts are saved in this browser.
+          {editing ? (
+            <>
+              Build your own chart: drag a field from <strong>Data</strong> onto the canvas, or pick
+              a chart type in <strong>Compose</strong>. Your charts are saved in this browser.
+              {narrow && ' On a phone, swipe sideways inside the box to reach the panels.'}
+            </>
+          ) : (
+            <>
+              Your saved charts show here. Building new charts works best on a computer or tablet.
+            </>
+          )}
         </span>
-        <button
-          type="button"
-          onClick={() => {
-            try {
-              window.localStorage.removeItem(SAVED_KEY);
-            } catch {
-              // Storage can be blocked (private window); the dashboard still works.
-            }
-            setGeneration((g) => g + 1);
-          }}
-        >
-          Clear my charts
-        </button>
+        <div className="studio-buttons">
+          {narrow && (
+            <button type="button" onClick={() => setEditOnPhone((v) => !v)}>
+              {editOnPhone ? 'Done editing' : 'Edit charts anyway'}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              try {
+                window.localStorage.removeItem(SAVED_KEY);
+              } catch {
+                // Storage can be blocked (private window); the dashboard still works.
+              }
+              setGeneration((g) => g + 1);
+            }}
+          >
+            Clear my charts
+          </button>
+        </div>
       </div>
-      <div style={{ height: 640 }}>
-        <AgStudio
-          key={generation}
-          data={data}
-          mode="edit"
-          initialState={initialState}
-          onStateUpdated={(e) => {
-            try {
-              window.localStorage.setItem(SAVED_KEY, JSON.stringify(e.state));
-            } catch {
-              // Storage can be blocked (private window); the dashboard still works.
-            }
-          }}
-          ai={vigilHarness}
-          theme={vigilStudioTheme}
-          style={{ height: '100%' }}
-        />
+      {/* Studio never widens the page: on a phone its editor scrolls inside this box. */}
+      <div className="studio-frame" style={{ height: narrow ? (editing ? 600 : 460) : 640 }}>
+        <div style={{ height: '100%', minWidth: narrow && editing ? 1000 : undefined }}>
+          <AgStudio
+            key={generation}
+            data={data}
+            mode={editing ? 'edit' : 'view'}
+            initialState={initialState}
+            onStateUpdated={(e) => {
+              try {
+                window.localStorage.setItem(SAVED_KEY, JSON.stringify(e.state));
+              } catch {
+                // Storage can be blocked (private window); the dashboard still works.
+              }
+            }}
+            ai={vigilHarness}
+            theme={vigilStudioTheme}
+            style={{ height: '100%' }}
+          />
+        </div>
       </div>
     </AgStudioProvider>
   );

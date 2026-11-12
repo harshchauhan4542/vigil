@@ -135,3 +135,13 @@ UI changes:
   - the merchant's own charts are saved in the browser, with a "Reset to the standard charts" button.
 
 Local clean-up (no code): the 14 false alerts were moved to DISMISSED and the stuck one to ESCALATED, both through the state machines, so the audit log records them.
+
+## 2026-11-12 (evening): Render deploy, Settings page, palette, mobile
+
+- **Render deploy.** `vigil-web` is on Standard (2 GB) and the Key Value service is gone. A `pg`/`ioredis` CommonJS import crash ("b is not a constructor") is fixed. `vigil-web` runs fixes itself (`TASK_RUNNER=inline`, a service-level override), so no Workflow service or Render API key is needed yet. Hosted at https://vigil-web-vxpb.onrender.com.
+- **Settings → Connect PayPal.** The merchant pastes their sandbox Client ID and Secret (Webhook ID optional). The server tests them with PayPal, stores them AES-256-GCM encrypted (key derived from `SESSION_SECRET`) in the new `app_settings` table, and restarts Live with them. The Secret is never returned. Changes need `ADMIN_PASSCODE` (8+ characters, set on the server), so the page is read-only without it. Tests: `apps/web/test/settings.test.ts`.
+- **Palette "ink & marigold":** indigo ink primary, marigold for "due soon", brick red for at risk. Every text pair is ≥ 4.5:1 in light and dark.
+- **Mobile:**
+  - AG Studio forced the page to ~635 px on a 390 px phone. Studio is now boxed, and grid children may shrink.
+  - Phones open the Studio section in view mode, with an "Edit charts anyway" button.
+  - The deadline timeline's label lanes are width-aware.

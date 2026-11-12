@@ -2,11 +2,12 @@
 import { useEffect, useState } from 'react';
 // Shared top bar: wordmark, page links, the light/dark toggle and the Demo / Live switch.
 
-type Page = 'control-room' | 'audit' | 'judge';
+type Page = 'control-room' | 'audit' | 'settings' | 'judge';
 
 const LINKS: { page: Page; href: string; label: string }[] = [
   { page: 'control-room', href: '/control-room', label: 'Problems' },
   { page: 'audit', href: '/audit', label: 'History' },
+  { page: 'settings', href: '/settings', label: 'Settings' },
   { page: 'judge', href: '/judge', label: 'Help' },
 ];
 
