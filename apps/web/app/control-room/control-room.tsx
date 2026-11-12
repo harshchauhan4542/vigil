@@ -26,6 +26,38 @@ const StudioPanel = dynamic(() => import('./studio-panel').then((m) => m.StudioP
   loading: () => <p className="muted">Loading analytics…</p>,
 });
 
+/** A small coloured badge per problem type, like a transaction icon in a banking app. */
+const PROBLEM_ICON: Record<string, { tone: string; d: string }> = {
+  AUTH_HONOR_EXPIRING: { tone: 'warn', d: 'M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z' },
+  UNTRACKED_CAPTURE: {
+    tone: 'info',
+    d: 'M3 7l9-4 9 4-9 4-9-4Zm0 0v10l9 4 9-4V7M12 11v10',
+  },
+  FAILED_RENEWAL: {
+    tone: 'risk',
+    d: 'M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4',
+  },
+  UNMATCHED_TXN: { tone: 'neutral', d: 'M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6M9 12h6' },
+};
+
+function ProblemIcon({ type }: { type: string }) {
+  const icon = PROBLEM_ICON[type] ?? PROBLEM_ICON.UNMATCHED_TXN!;
+  return (
+    <span className={`problem-icon ${icon.tone}`} aria-hidden="true">
+      <svg width="16" height="16" viewBox="0 0 24 24">
+        <path
+          d={icon.d}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  );
+}
+
 function greeting(now: number): string {
   const h = new Date(now).getHours();
   return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
@@ -105,10 +137,13 @@ export function ControlRoom({
         headerName: 'Problem',
         valueGetter: (p) => problemLabel(p.data!.type),
         cellRenderer: (p: { data: QueueRow }) => (
-          <span title={p.data.type}>{problemLabel(p.data.type)}</span>
+          <span className="cell-problem" title={p.data.type}>
+            <ProblemIcon type={p.data.type} />
+            <span>{problemLabel(p.data.type)}</span>
+          </span>
         ),
         flex: 1.3,
-        minWidth: 210,
+        minWidth: 240,
       },
       {
         headerName: 'PayPal reference',
@@ -121,8 +156,9 @@ export function ControlRoom({
         headerName: 'At risk',
         valueGetter: (p) => p.data!.amountAtRiskCents,
         valueFormatter: (p) => money(p.value as number | null, p.data!.currency),
-        width: 110,
+        width: 120,
         type: 'rightAligned',
+        cellClass: 'cell-amount',
       },
       {
         headerName: 'Time left',
@@ -231,7 +267,7 @@ export function ControlRoom({
             </div>
           </div>
           {/* Tall enough for every row (up to 9) without an inner scrollbar. */}
-          <div style={{ height: 46 + 52 * Math.min(Math.max(rows.length, 3), 9) }}>
+          <div style={{ height: 48 + 60 * Math.min(Math.max(rows.length, 3), 9) }}>
             <AgGridReact<QueueRow>
               ref={grid}
               theme={vigilGridTheme}

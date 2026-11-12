@@ -135,9 +135,9 @@ type Palette = ReturnType<typeof palette>;
 function base(p: Palette, title: string, subtitle: string): Partial<AgCartesianChartOptions> {
   return {
     background: { fill: p.surface },
-    title: { text: title, color: p.ink, fontSize: 15, fontWeight: 600, textAlign: 'left' },
+    title: { text: title, color: p.ink, fontSize: 16, fontWeight: 700, textAlign: 'left' },
     subtitle: { text: subtitle, color: p.muted, fontSize: 12, textAlign: 'left' },
-    padding: { top: 12, right: 16, bottom: 8, left: 8 },
+    padding: { top: 18, right: 20, bottom: 12, left: 14 },
     legend: { position: 'bottom', item: { label: { color: p.ink } } },
   };
 }
@@ -148,7 +148,7 @@ function axes(p: Palette, money: boolean): AgCartesianChartOptions['axes'] {
       type: 'category',
       position: 'bottom',
       label: { color: p.muted, fontSize: 11 },
-      line: { stroke: p.line },
+      line: { enabled: false },
     },
     y: {
       type: 'number',
@@ -164,12 +164,20 @@ function axes(p: Palette, money: boolean): AgCartesianChartOptions['axes'] {
   };
 }
 
+/** Short names so the bar chart's labels never get cut off. */
+const SHORT: Record<string, string> = {
+  AUTH_HONOR_EXPIRING: 'Held payments',
+  UNTRACKED_CAPTURE: 'No tracking',
+  FAILED_RENEWAL: 'Failed renewals',
+  UNMATCHED_TXN: 'Not in your books',
+};
+
 /** Open money by problem type, and how many problems sit in each status. */
 function breakdownData(rows: QueueRow[]) {
   const byProblem = new Map<string, number>();
   for (const r of rows) {
     if (CLOSED.has(r.status)) continue;
-    const k = problemLabel(r.type);
+    const k = SHORT[r.type] ?? problemLabel(r.type);
     byProblem.set(k, (byProblem.get(k) ?? 0) + (r.amountAtRiskCents ?? 0));
   }
   const byStatus = new Map<string, { count: number; tone: Tone }>();
@@ -250,7 +258,8 @@ export function TrendCharts({ rows, now }: { rows: QueueRow[]; now: number }) {
           yKey: 'found',
           yName: 'Found',
           stroke: p.red,
-          marker: { fill: p.red, stroke: p.red, size: 6 },
+          strokeWidth: 3,
+          marker: { fill: p.surface, stroke: p.red, strokeWidth: 2, size: 7 },
           interpolation: { type: 'smooth' },
         },
         {
@@ -259,7 +268,8 @@ export function TrendCharts({ rows, now }: { rows: QueueRow[]; now: number }) {
           yKey: 'fixed',
           yName: 'Fixed',
           stroke: p.teal,
-          marker: { fill: p.teal, stroke: p.teal, size: 6 },
+          strokeWidth: 3,
+          marker: { fill: p.surface, stroke: p.teal, strokeWidth: 2, size: 7 },
           interpolation: { type: 'smooth' },
         },
       ],
@@ -274,11 +284,11 @@ export function TrendCharts({ rows, now }: { rows: QueueRow[]; now: number }) {
           xKey: 'when',
           yKey: 'atRisk',
           yName: 'Money at risk',
-          stroke: p.red,
-          strokeWidth: 2,
-          fill: p.red,
-          fillOpacity: 0.15,
-          marker: { enabled: true, fill: p.red, stroke: p.red, size: 5 },
+          stroke: p.teal,
+          strokeWidth: 3,
+          fill: p.teal,
+          fillOpacity: 0.16,
+          marker: { enabled: true, fill: p.surface, stroke: p.teal, strokeWidth: 2, size: 7 },
           interpolation: { type: 'smooth' },
         },
       ],
@@ -294,8 +304,8 @@ export function TrendCharts({ rows, now }: { rows: QueueRow[]; now: number }) {
           yKey: 'due',
           yName: 'Due by then',
           stroke: p.amber,
-          strokeWidth: 2,
-          marker: { fill: p.amber, stroke: p.amber, size: 6 },
+          strokeWidth: 3,
+          marker: { fill: p.surface, stroke: p.amber, strokeWidth: 2, size: 7 },
           interpolation: { type: 'step' },
         },
       ],
@@ -329,9 +339,9 @@ export function TrendCharts({ rows, now }: { rows: QueueRow[]; now: number }) {
           xKey: 'problem',
           yKey: 'atRisk',
           yName: 'Money at risk',
-          fill: p.red,
-          fillOpacity: 0.85,
-          cornerRadius: 4,
+          fill: p.teal,
+          fillOpacity: 0.9,
+          cornerRadius: 8,
         },
       ],
     };
@@ -347,8 +357,8 @@ export function TrendCharts({ rows, now }: { rows: QueueRow[]; now: number }) {
       title: {
         text: 'Problems by status',
         color: p.ink,
-        fontSize: 15,
-        fontWeight: 600,
+        fontSize: 16,
+        fontWeight: 700,
         textAlign: 'left',
       },
       subtitle: {
@@ -370,8 +380,17 @@ export function TrendCharts({ rows, now }: { rows: QueueRow[]; now: number }) {
           sectorLabel: { color: p.surface, fontWeight: 600 },
           fills: b.statuses.map((x) => toneColour[x.tone]),
           strokes: b.statuses.map(() => p.surface),
-          strokeWidth: 2,
-          innerRadiusRatio: 0.6,
+          strokeWidth: 3,
+          innerRadiusRatio: 0.68,
+          innerLabels: [
+            {
+              text: String(b.statuses.reduce((n, x) => n + x.count, 0)),
+              fontSize: 28,
+              fontWeight: 800,
+              color: p.ink,
+            },
+            { text: 'problems', fontSize: 12, color: p.muted },
+          ],
         },
       ],
     };

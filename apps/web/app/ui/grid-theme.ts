@@ -14,7 +14,14 @@ export const vigilGridTheme = themeQuartz.withParams({
   rowHoverColor: 'var(--hover)',
   selectedRowBackgroundColor: 'var(--selected)',
   oddRowBackgroundColor: 'var(--surface)',
-  wrapperBorderRadius: 10,
-  rowHeight: 52,
-  headerHeight: 42,
+  // Banking-style list: tall rows, no vertical lines, soft header, rounded wrapper.
+  wrapperBorder: false,
+  wrapperBorderRadius: 14,
+  columnBorder: false,
+  headerColumnBorder: false,
+  headerRowBorder: { color: 'var(--line)' },
+  rowBorder: { color: 'var(--line)' },
+  rowHeight: 60,
+  headerHeight: 46,
+  cellHorizontalPadding: 18,
 });
