@@ -8,8 +8,11 @@ import {
   ModuleRegistry,
   type AgCartesianChartOptions,
   type AgChartInstance,
+  type AgChartOptions,
+  type AgPolarChartOptions,
 } from 'ag-charts-community';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { exceptionStatus, problemLabel, type Tone } from '../ui/labels';
 import type { QueueRow } from './types';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -161,7 +164,39 @@ function axes(p: Palette, money: boolean): AgCartesianChartOptions['axes'] {
   };
 }
 
-function Chart({ options, label }: { options: AgCartesianChartOptions; label: string }) {
+/** Open money by problem type, and how many problems sit in each status. */
+function breakdownData(rows: QueueRow[]) {
+  const byProblem = new Map<string, number>();
+  for (const r of rows) {
+    if (CLOSED.has(r.status)) continue;
+    const k = problemLabel(r.type);
+    byProblem.set(k, (byProblem.get(k) ?? 0) + (r.amountAtRiskCents ?? 0));
+  }
+  const byStatus = new Map<string, { count: number; tone: Tone }>();
+  for (const r of rows) {
+    const [label, tone] = exceptionStatus(r.status);
+    const cur = byStatus.get(label) ?? { count: 0, tone };
+    byStatus.set(label, { count: cur.count + 1, tone });
+  }
+  return {
+    problems: [...byProblem]
+      .map(([problem, cents]) => ({ problem, atRisk: dollars(cents) }))
+      .sort((a, b) => b.atRisk - a.atRisk),
+    statuses: [...byStatus]
+      .map(([status, v]) => ({ status, count: v.count, tone: v.tone }))
+      .sort((a, b) => b.count - a.count),
+  };
+}
+
+function Chart({
+  options,
+  label,
+  wide = false,
+}: {
+  options: AgChartOptions;
+  label: string;
+  wide?: boolean;
+}) {
   const host = useRef<HTMLDivElement>(null);
   const chart = useRef<AgChartInstance | null>(null);
   useEffect(() => {
@@ -176,7 +211,14 @@ function Chart({ options, label }: { options: AgCartesianChartOptions; label: st
     },
     [],
   );
-  return <div className="trend-chart" ref={host} role="img" aria-label={label} />;
+  return (
+    <div
+      className={wide ? 'trend-chart wide' : 'trend-chart'}
+      ref={host}
+      role="img"
+      aria-label={label}
+    />
+  );
 }
 
 /** `now` is the page's clock (the server's; frozen in Demo), so the charts match the table. */
@@ -258,7 +300,82 @@ export function TrendCharts({ rows, now }: { rows: QueueRow[]; now: number }) {
         },
       ],
     };
-    return { activity, risk, due };
+    const b = breakdownData(rows);
+    const byProblem: AgCartesianChartOptions = {
+      ...base(
+        p,
+        'Money at risk by problem',
+        'Open problems only: where most of your money is stuck',
+      ),
+      data: b.problems,
+      axes: {
+        y: { type: 'category', position: 'left', label: { color: p.ink, fontSize: 12 } },
+        x: {
+          type: 'number',
+          position: 'bottom',
+          label: {
+            color: p.muted,
+            fontSize: 11,
+            formatter: ({ value }: { value: number }) => usd.format(value),
+          },
+          gridLine: { style: [{ stroke: p.line, lineDash: [3, 3] }] },
+        },
+      },
+      legend: { enabled: false },
+      series: [
+        {
+          type: 'bar',
+          direction: 'horizontal',
+          xKey: 'problem',
+          yKey: 'atRisk',
+          yName: 'Money at risk',
+          fill: p.red,
+          fillOpacity: 0.85,
+          cornerRadius: 4,
+        },
+      ],
+    };
+    const toneColour: Record<Tone, string> = {
+      ok: p.teal,
+      info: p.teal,
+      wait: p.amber,
+      risk: p.red,
+      neutral: p.muted,
+    };
+    const byStatus: AgPolarChartOptions = {
+      background: { fill: p.surface },
+      title: {
+        text: 'Problems by status',
+        color: p.ink,
+        fontSize: 15,
+        fontWeight: 600,
+        textAlign: 'left',
+      },
+      subtitle: {
+        text: 'Every problem Vigil has found, grouped by where it stands',
+        color: p.muted,
+        fontSize: 12,
+        textAlign: 'left',
+      },
+      padding: { top: 12, right: 16, bottom: 8, left: 8 },
+      legend: { position: 'right', item: { label: { color: p.ink } } },
+      data: b.statuses,
+      series: [
+        {
+          type: 'donut',
+          angleKey: 'count',
+          angleName: 'Problems',
+          legendItemKey: 'status',
+          sectorLabelKey: 'count',
+          sectorLabel: { color: p.surface, fontWeight: 600 },
+          fills: b.statuses.map((x) => toneColour[x.tone]),
+          strokes: b.statuses.map(() => p.surface),
+          strokeWidth: 2,
+          innerRadiusRatio: 0.6,
+        },
+      ],
+    };
+    return { activity, risk, due, byProblem, byStatus };
     // `theme` is a dependency on purpose: it re-reads the CSS colours.
   }, [rows, now, theme]);
 
@@ -267,6 +384,8 @@ export function TrendCharts({ rows, now }: { rows: QueueRow[]; now: number }) {
       <Chart options={charts.activity} label="Line chart of problems found and fixed over time" />
       <Chart options={charts.risk} label="Area chart of money at risk over time" />
       <Chart options={charts.due} label="Step chart of money coming due over the next 7 days" />
+      <Chart options={charts.byProblem} label="Bar chart of open money at risk by problem" wide />
+      <Chart options={charts.byStatus} label="Donut chart of problems by status" wide />
     </section>
   );
 }

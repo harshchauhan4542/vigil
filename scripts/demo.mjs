@@ -16,5 +16,6 @@ const run = (args) => {
 };
 console.log('Building Vigil (Replay mode, zero keys)…');
 run(['--filter', '@vigil/web', 'exec', 'next', 'build', '--webpack']);
-console.log('Open http://localhost:3000/control-room');
-run(['--filter', '@vigil/web', 'exec', 'next', 'start', '-p', process.env.PORT || '3000']);
+const port = process.env.PORT || '3000';
+console.log(`Open http://localhost:${port}/control-room`);
+run(['--filter', '@vigil/web', 'exec', 'next', 'start', '-p', port]);

@@ -36,69 +36,12 @@ function muteLicenceBanner() {
 }
 
 const CLOSED = new Set(['RESOLVED', 'DISMISSED']);
-const SAVED_KEY = 'vigil-dashboard-v2';
+const SAVED_KEY = 'vigil-my-charts-v1';
 
-// Field ids are `<source>.<field>`.
-const f = (field: string, aggregation?: 'sum' | 'count') => ({
-  id: `problems.${field}`,
-  ...(aggregation ? { aggregation } : {}),
-});
-const title = (text: string) => ({ title: { text, enabled: true } });
-
-/** The ready-made "Overview" page: headline numbers on top, two charts below. */
-const STANDARD_DASHBOARD = {
-  selectedPageId: 'overview',
-  // Start with the charts full width; the editing panels open with one click.
-  panels: { filters: { collapsed: true }, edit: { collapsed: true }, data: { collapsed: true } },
-  pages: [
-    {
-      id: 'overview',
-      layout: { columns: 12, rowHeight: 40 },
-      widgets: {
-        risk: {
-          type: 'value',
-          dataMapping: { value: [f('open_money_at_risk', 'sum')] },
-          format: title('Money at risk (open problems)'),
-        },
-        open: {
-          type: 'value',
-          dataMapping: { value: [f('is_open', 'sum')] },
-          format: title('Open problems'),
-        },
-        waiting: {
-          type: 'value',
-          dataMapping: { value: [f('waiting_for_you', 'sum')] },
-          format: title('Fixes waiting for your OK'),
-        },
-        fixed: {
-          type: 'value',
-          dataMapping: { value: [f('is_fixed', 'sum')] },
-          format: title('Problems fixed'),
-        },
-        byProblem: {
-          type: 'column-chart-grouped',
-          dataMapping: {
-            categoryKey: [f('problem')],
-            valueKey: [f('open_money_at_risk', 'sum')],
-          },
-          format: title('Money at risk by problem'),
-        },
-        byStatus: {
-          type: 'donut-chart',
-          dataMapping: { categoryKey: [f('status')], valueKey: [f('reference', 'count')] },
-          format: title('Problems by status'),
-        },
-      },
-      widgetLayout: {
-        risk: { xTrack: 0, yTrack: 0, xSpan: 3, ySpan: 3 },
-        open: { xTrack: 3, yTrack: 0, xSpan: 3, ySpan: 3 },
-        waiting: { xTrack: 6, yTrack: 0, xSpan: 3, ySpan: 3 },
-        fixed: { xTrack: 9, yTrack: 0, xSpan: 3, ySpan: 3 },
-        byProblem: { xTrack: 0, yTrack: 3, xSpan: 7, ySpan: 8 },
-        byStatus: { xTrack: 7, yTrack: 3, xSpan: 5, ySpan: 8 },
-      },
-    },
-  ],
+/** A blank page: the ready-made charts live above the table, this canvas is the merchant's own. */
+const BLANK_DASHBOARD = {
+  selectedPageId: 'my-charts',
+  pages: [{ id: 'my-charts', layout: { columns: 12, rowHeight: 40 } }],
 } as unknown as AgReportState;
 
 const USD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
@@ -138,10 +81,10 @@ function savedDashboard(): AgReportState | null {
 
 export function StudioPanel({ rows, licenseKey }: { rows: QueueRow[]; licenseKey: string }) {
   if (!licenseKey) muteLicenceBanner();
-  // Bumping this remounts Studio, which re-reads initialState (used by "reset").
+  // Bumping this remounts Studio, which re-reads initialState (used by "clear").
   const [generation, setGeneration] = useState(0);
   const initialState = useMemo(
-    () => (generation === 0 ? savedDashboard() : null) ?? STANDARD_DASHBOARD,
+    () => (generation === 0 ? savedDashboard() : null) ?? BLANK_DASHBOARD,
     [generation],
   );
   const data = useMemo(
@@ -189,11 +132,11 @@ export function StudioPanel({ rows, licenseKey }: { rows: QueueRow[]; licenseKey
     <AgStudioProvider {...(licenseKey ? { licenseKey } : {})}>
       <div className="studio-tools">
         <span className="muted">
-          Your charts are saved in this browser. Add your own with the panels on the right.
+          Build your own chart: drag a field from <strong>Data</strong> onto the canvas, or pick a
+          chart type in <strong>Compose</strong>. Your charts are saved in this browser.
         </span>
         <button
           type="button"
-
           onClick={() => {
             try {
               window.localStorage.removeItem(SAVED_KEY);
@@ -203,7 +146,7 @@ export function StudioPanel({ rows, licenseKey }: { rows: QueueRow[]; licenseKey
             setGeneration((g) => g + 1);
           }}
         >
-          Reset to the standard charts
+          Clear my charts
         </button>
       </div>
       <div style={{ height: 640 }}>
