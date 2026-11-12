@@ -26,6 +26,11 @@ const StudioPanel = dynamic(() => import('./studio-panel').then((m) => m.StudioP
   loading: () => <p className="muted">Loading analytics…</p>,
 });
 
+function greeting(now: number): string {
+  const h = new Date(now).getHours();
+  return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+}
+
 function dueIn(deadline: string | null, now: number): { text: string; cls: string } {
   if (!deadline) return { text: 'No rush', cls: 'muted' };
   const ms = Date.parse(deadline) - now;
@@ -198,6 +203,11 @@ export function ControlRoom({
             moves until the safety rules pass and you press Approve.
           </>
         )}
+      </div>
+
+      <div className="greeting">
+        <h1>{greeting(now)}</h1>
+        <p>Here is what needs your attention in your PayPal account today.</p>
       </div>
 
       <section className="band" aria-label="Overview">

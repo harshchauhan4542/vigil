@@ -253,9 +253,16 @@ export interface SavedPayPal {
   savedAt: string;
 }
 
-/** Run `fn` against the Live database: the running Live server's, or a short-lived handle. */
-export async function withLiveDb<T>(fn: (db: Db) => Promise<T>): Promise<T> {
-  const cached = g.__vigilServers?.get('live');
+/**
+ * Run `fn` against the Live database: the running Live server's, or a short-lived handle.
+ * `reuseRunning: false` is required while the Live server itself is being built, or it would
+ * wait for its own (still pending) build forever.
+ */
+export async function withLiveDb<T>(
+  fn: (db: Db) => Promise<T>,
+  { reuseRunning = true }: { reuseRunning?: boolean } = {},
+): Promise<T> {
+  const cached = reuseRunning ? g.__vigilServers?.get('live') : undefined;
   if (cached) {
     const srv = await cached.catch(() => null);
     if (srv && !srv.fallback) return fn(srv.db);
@@ -273,15 +280,18 @@ export async function withLiveDb<T>(fn: (db: Db) => Promise<T>): Promise<T> {
   }
 }
 
-export async function readSavedPayPal(): Promise<SavedPayPal | null> {
+export async function readSavedPayPal(
+  options: { reuseRunning?: boolean } = {},
+): Promise<SavedPayPal | null> {
   const { unseal } = await import('./secret-box');
-  const sealed = await withLiveDb((db) => getSetting(db, PAYPAL_SETTING));
+  const sealed = await withLiveDb((db) => getSetting(db, PAYPAL_SETTING), options);
   return sealed ? unseal<SavedPayPal>(sealed, process.env.SESSION_SECRET) : null;
 }
 
 async function savedPayPalEnv(): Promise<Record<string, string>> {
   try {
-    const saved = await readSavedPayPal();
+    // Called while the Live server is being built: never wait on that same build.
+    const saved = await readSavedPayPal({ reuseRunning: false });
     if (!saved) return {};
     return {
       PAYPAL_CLIENT_ID: saved.clientId,

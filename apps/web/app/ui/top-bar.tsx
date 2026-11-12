@@ -4,6 +4,16 @@ import { useEffect, useState } from 'react';
 
 type Page = 'control-room' | 'audit' | 'settings' | 'judge';
 
+// Simple line icons for the menu (24×24, stroke = currentColor).
+const ICONS: Record<Page, string> = {
+  'control-room': 'M3 13h7V3H3v10Zm0 8h7v-6H3v6Zm11 0h7V11h-7v10Zm0-18v6h7V3h-7Z',
+  audit: 'M12 8v4l3 2M3.05 11a9 9 0 1 1 .5 4M3 4v5h5',
+  settings:
+    'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7.4-3a7.4 7.4 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-2-1.2L14.5 2h-4l-.4 2.6a7.6 7.6 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7.4 7.4 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1c.6.5 1.3.9 2 1.2l.4 2.6h4l.4-2.6c.7-.3 1.4-.7 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2Z',
+  judge:
+    'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm-2.5-13a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14m0 3h.01',
+};
+
 const LINKS: { page: Page; href: string; label: string }[] = [
   { page: 'control-room', href: '/control-room', label: 'Problems' },
   { page: 'audit', href: '/audit', label: 'History' },
@@ -80,7 +90,17 @@ export function TopBar({
       <nav className="nav" aria-label="Pages">
         {LINKS.map((l) => (
           <a key={l.page} href={l.href} aria-current={l.page === page ? 'page' : undefined}>
-            {l.label}
+            <svg className="nav-icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d={ICONS[l.page]}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span>{l.label}</span>
           </a>
         ))}
       </nav>
