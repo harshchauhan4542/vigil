@@ -38,7 +38,7 @@ What we tested end to end: double approval → one PayPal effect; forced 503 and
 
 - Repository (public, MIT): https://github.com/harshchauhan4542/vigil
 - Run it (functional demo): `git clone https://github.com/harshchauhan4542/vigil.git && cd vigil && pnpm install && pnpm demo`, then open http://localhost:3000/control-room (no keys, no Docker; steps in the README)
-- Hosted demo: _add after deploying (docs/deploy.md), optional: the run instructions already satisfy the rule_
+- Hosted demo: https://vigil-web-vxpb.onrender.com/control-room
 - Video: _YouTube, public, under 3:00, no unlicensed music_
 
 ## Submission checklist (Devpost requirements)
