@@ -14,8 +14,12 @@ envVarGroups:
       - { key: POLICY_PER_ACTION_CAP_USD, value: '500' }
       - { key: POLICY_DAILY_CAP_USD, value: '2000' }
       - { key: AI_DAILY_TOKEN_BUDGET, value: '2000000' }
-      - { key: VIGIL_MODEL_INTERACTIVE, value: claude-sonnet-5 }
-      - { key: VIGIL_MODEL_BATCH, value: claude-opus-5-5 }
+      # Free open-weight model on Groq (OpenAI-compatible). For Claude instead, set
+      # LLM_PROVIDER=anthropic, ANTHROPIC_API_KEY and the claude-* model names.
+      - { key: LLM_PROVIDER, value: openai }
+      - { key: LLM_BASE_URL, value: 'https://api.groq.com/openai/v1' }
+      - { key: VIGIL_MODEL_INTERACTIVE, value: openai/gpt-oss-120b }
+      - { key: VIGIL_MODEL_BATCH, value: openai/gpt-oss-120b }
       - { key: ALLOW_SIMULATED_WEBHOOKS, value: 'false' }
       - { key: APPROVAL_HMAC_SECRET, generateValue: true }
       - { key: SESSION_SECRET, generateValue: true }
@@ -23,6 +27,7 @@ envVarGroups:
       - { key: PAYPAL_CLIENT_ID, sync: false }
       - { key: PAYPAL_SECRET, sync: false }
       - { key: PAYPAL_WEBHOOK_ID, sync: false }
+      - { key: LLM_API_KEY, sync: false }
       - { key: ANTHROPIC_API_KEY, sync: false }
       - { key: RENDER_API_KEY, sync: false }
       - { key: AG_STUDIO, sync: false }
@@ -32,16 +37,15 @@ databases:
     plan: basic-256mb
     postgresMajorVersion: '16'
 
+# No Key Value service: Vigil falls back to an in-memory token cache, which is enough here and
+# keeps the hosted demo inside the hackathon's Render credits.
 services:
-  - type: keyvalue
-    name: vigil-kv
-    plan: starter
-    ipAllowList: [] # internal connections only
-
   - type: web
     name: vigil-web
     runtime: node
-    plan: starter
+    # Standard (2 GB): the zero-key Demo world builds an in-memory database at start-up and
+    # peaks around 570-680 MB, above Starter's 512 MB.
+    plan: standard
     buildCommand: npm install -g pnpm@10.34.9 && pnpm install --frozen-lockfile && pnpm turbo run build --filter=@vigil/web
     startCommand: pnpm --filter @vigil/web start -p $PORT
     healthCheckPath: /api/health
@@ -49,8 +53,6 @@ services:
       - fromGroup: vigil-shared
       - key: DATABASE_URL
         fromDatabase: { name: vigil-db, property: connectionString }
-      - key: REDIS_URL
-        fromService: { type: keyvalue, name: vigil-kv, property: connectionString }
 
   - type: cron
     name: vigil-detect
